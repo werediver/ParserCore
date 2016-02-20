@@ -7,8 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE37CE6E1C78754700A5A01D /* String+Ext.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE37CE6D1C78754700A5A01D /* String+Ext.swift */; };
 		CE3E40141C551DCB0089FA00 /* Lexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3E40131C551DCB0089FA00 /* Lexer.swift */; };
 		CE4621371C5E8A77000DB3F6 /* LangUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4621361C5E8A77000DB3F6 /* LangUtils.swift */; };
+		CE558D181C6BE39400C7E0C1 /* Tree.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE558D171C6BE39400C7E0C1 /* Tree.swift */; };
 		CEFD1A991C540E5B00B642CD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFD1A981C540E5B00B642CD /* main.swift */; };
 		CEFD1AA01C54100000B642CD /* RegEx.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFD1A9F1C54100000B642CD /* RegEx.swift */; };
 /* End PBXBuildFile section */
@@ -26,8 +28,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CE37CE6D1C78754700A5A01D /* String+Ext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "String+Ext.swift"; sourceTree = "<group>"; };
 		CE3E40131C551DCB0089FA00 /* Lexer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Lexer.swift; sourceTree = "<group>"; };
 		CE4621361C5E8A77000DB3F6 /* LangUtils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LangUtils.swift; sourceTree = "<group>"; };
+		CE558D171C6BE39400C7E0C1 /* Tree.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Tree.swift; sourceTree = "<group>"; };
 		CEFD1A951C540E5A00B642CD /* Parser */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Parser; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEFD1A981C540E5B00B642CD /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		CEFD1A9F1C54100000B642CD /* RegEx.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RegEx.swift; sourceTree = "<group>"; };
@@ -66,7 +70,9 @@
 				CEFD1A981C540E5B00B642CD /* main.swift */,
 				CE3E40131C551DCB0089FA00 /* Lexer.swift */,
 				CEFD1A9F1C54100000B642CD /* RegEx.swift */,
+				CE558D171C6BE39400C7E0C1 /* Tree.swift */,
 				CE4621361C5E8A77000DB3F6 /* LangUtils.swift */,
+				CE37CE6D1C78754700A5A01D /* String+Ext.swift */,
 			);
 			path = Parser;
 			sourceTree = "<group>";
@@ -127,6 +133,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE37CE6E1C78754700A5A01D /* String+Ext.swift in Sources */,
+				CE558D181C6BE39400C7E0C1 /* Tree.swift in Sources */,
 				CEFD1A991C540E5B00B642CD /* main.swift in Sources */,
 				CE4621371C5E8A77000DB3F6 /* LangUtils.swift in Sources */,
 				CE3E40141C551DCB0089FA00 /* Lexer.swift in Sources */,

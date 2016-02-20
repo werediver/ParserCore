@@ -1,66 +1,92 @@
 import Foundation
 
-protocol LexSym {
+struct Token<Sym, Index: ForwardIndexType> {
 
-    func match(s: String) -> Int
+    let sym: Sym
+
+    let start: Index
+    var   end: Index
+
+    var range: Range<Index> {
+        return Range(start: start, end: end)
+    }
+
+    init(sym: Sym, start: Index) {
+        self.sym = sym
+        self.start = start
+        self.end   = start
+    }
+
+    init(sym: Sym, start: Index, end: Index) {
+        self.sym = sym
+        self.start = start
+        self.end   = end
+    }
 
 }
 
-struct LexToken<LexSym> {
+protocol TerminalSymbol: Equatable {
 
-    var sym: LexSym
-    var range: Range<String.Index>
+    func match(src: String) -> Int
 
 }
 
-struct Lexer<Sym: LexSym>: SequenceType {
+extension TerminalSymbol where Self: RawRepresentable, Self.RawValue == RegEx {
+
+    func match(src: String) -> Int {
+        return rawValue.rangeOfFirstMatchInString(src)?.count ?? 0
+    }
+
+}
+
+struct Lexer<Sym: TerminalSymbol>: SequenceType {
 
     typealias Generator = LexerGen<Sym>
 
     let syms: [Sym]
-    let text: String
+    let src: String
 
-    init(text: String, syms: [Sym]) {
-        self.text = text
+    init(syms: [Sym], src: String) {
         self.syms = syms
+        self.src = src
     }
 
     func generate() -> Generator {
-        return Generator(text: text, syms: syms)
+        return Generator(syms: syms, src: src)
     }
 
 }
 
-struct LexerGen<Sym: LexSym>: GeneratorType {
+struct LexerGen<Sym: TerminalSymbol>: GeneratorType {
 
-    typealias Element = LexToken<Sym>
+    typealias Element = Token<Sym, String.Index>
 
     let syms: [Sym]
-    let text: String
+    let src: String
     var offset = 0
 
-    init(text: String, syms: [Sym]) {
-        self.text = text
+    init(syms: [Sym], src: String) {
         self.syms = syms
+        self.src = src
     }
 
     mutating func next() -> Element? {
-        var ret: Element? = nil
+        var token: Element? = nil
 
-        let startIndex = text.startIndex.advancedBy(offset)
-        let rest = text.substringFromIndex(startIndex)
+        let start = src.startIndex.advancedBy(offset)
+        let rest  = src.substringFromIndex(start)
 
         for sym in syms {
             let len = sym.match(rest)
             if  len > 0 {
+                let end = start.advancedBy(len)
+                token = Token(sym: sym, start: start, end: end)
                 offset += len
-                let endIndex = startIndex.advancedBy(len)
-                ret = Element(sym: sym, range: Range<String.Index>(start: startIndex, end: endIndex))
                 break
             }
         }
 
-        return ret
+        return token
     }
 
 }
