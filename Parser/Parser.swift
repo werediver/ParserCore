@@ -30,6 +30,8 @@ enum ParserAction<NTS: NonTerminalSymbol> {
 
     case Finish(TreeNode<Token<NTS, Int>>, Bool)
 
+    // TODO: Move to an extension.
+    // TODO: Print tokens' source text fragments (find a way to).
     static func debug() -> (p: Parser<NTS>, a: ParserAction<NTS>) -> () {
         let indent = "    "
         var indentLevel = 0
@@ -62,12 +64,11 @@ class Parser<_NTS: NonTerminalSymbol>: BacktrackingParser {
 
     var onAction: ((Parser<NTS>, Action) -> ())?
 
+    let startSym: NTS
     let src: [Token<NTS.TS, String.Index>]
 
-    let startSym: NTS
-
     var stack = [TreeNode<Token<NTS, Int>>]()
-    var offset: Int? { return stack.last?.value.end }
+    var offset: Int? { return stack.last?.value.end } // For convenience
 
     init(startSym: NTS, src: [Token<NTS.TS, String.Index>]) {
         self.startSym = startSym
@@ -75,6 +76,12 @@ class Parser<_NTS: NonTerminalSymbol>: BacktrackingParser {
     }
 
     func parse() -> Bool {
+        /* TODO: Wrap the `startSym` to accommodate possible root-level alternatives and suppress false Finish events.
+        enter("__START")
+        let match = startSym.parse(self)
+        leave(match)
+        return match
+        */
         return startSym.parse(self)
     }
 

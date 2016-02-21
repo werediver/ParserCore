@@ -27,6 +27,22 @@ enum MathTS: RegEx, TerminalSymbol {
 
 }
 
+extension BacktrackingParser {
+
+    func parse(sym: NTS, alts: (() -> Bool)...) -> Bool {
+        for alt in alts {
+            enter(sym)
+            let match = alt()
+            leave(match)
+            if match {
+                return true
+            }
+        }
+        return false
+    }
+
+}
+
 enum MathNTS: NonTerminalSymbol {
 
     typealias TS = MathTS
@@ -36,54 +52,27 @@ enum MathNTS: NonTerminalSymbol {
     func parse<Parser : BacktrackingParser where Parser.NTS == MathNTS>(p: Parser) -> Bool {
         switch self {
             case .S:
-                p.enter(.S)
-                let match = MathNTS.P.parse(p) && p.accept(.AddTierOp) && MathNTS.S.parse(p)
-                p.leave(match)
-                if match {
-                    return true
-                } else {
-                    p.enter(.S)
-                    let match = MathNTS.P.parse(p)
-                    p.leave(match)
-                    if match {
-                        return true
-                    }
-                }
+                return p.parse(.S, alts:
+                    { MathNTS.P.parse(p) && p.accept(.AddTierOp) && MathNTS.S.parse(p) },
+                    { MathNTS.P.parse(p) }
+                )
             case .P:
-                p.enter(.P)
-                let match = MathNTS.T.parse(p) && p.accept(.MulTierOp) && MathNTS.P.parse(p)
-                p.leave(match)
-                if match {
-                    return true
-                } else {
-                    p.enter(.P)
-                    let match = MathNTS.T.parse(p)
-                    p.leave(match)
-                    if match {
-                        return true
-                    }
-                }
+                return p.parse(.P, alts:
+                    { MathNTS.T.parse(p) && p.accept(.MulTierOp) && MathNTS.P.parse(p) },
+                    { MathNTS.T.parse(p) }
+                )
             case .T:
-                p.enter(.T)
-                let match = p.accept(.ParOp) && MathNTS.S.parse(p) && p.accept(.ParCl)
-                p.leave(match)
-                if match {
-                    return true
-                } else {
-                    p.enter(.T)
-                    let match = p.accept(.Num)
-                    p.leave(match)
-                    if match {
-                        return true
-                    }
-                }
+                return p.parse(.T, alts:
+                    { p.accept(.ParOp) && MathNTS.S.parse(p) && p.accept(.ParCl) },
+                    { p.accept(.Num) }
+                )
         }
-        return false
     }
 
 }
 
 let src = "(1 + 2 + 3 * 4 * 5) * 6 + 7"
+print("Input: \"\(src)\"")
 let tks = Lexer(syms: MathTS.all, src: src).filter { $0.sym != MathTS.Space } .map { $0 }
 let p = Parser(startSym: MathNTS.S, src: tks)
 p.onAction = ParserAction<MathNTS>.debug()
