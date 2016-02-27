@@ -56,18 +56,45 @@ enum ParserAction<NTS: NonTerminalSymbol> {
 
 }
 
+enum ParserSym<NTS> {
+
+    case General(NTS)
+    case Service(String)
+
+    var generalSym: NTS? {
+        switch self {
+            case let .General(sym):
+                return sym
+            default:
+                return nil
+        }
+    }
+
+    var serviceSym: String? {
+        switch self {
+            case let .Service(sym):
+                return sym
+            default:
+                return nil
+        }
+    }
+
+}
+
 class Parser<_NTS: NonTerminalSymbol>: BacktrackingParser {
 
     typealias NTS = _NTS
 
     typealias Action = ParserAction<NTS>
 
+    let __START = "__START"
+
     var onAction: ((Parser<NTS>, Action) -> ())?
 
     let startSym: NTS
     let src: [Token<NTS.TS, String.Index>]
 
-    var stack = [TreeNode<Token<NTS, Int>>]()
+    var stack = [TreeNode<Token<ParserSym<NTS>, Int>>]()
     var offset: Int? { return stack.last?.value.end } // For convenience
 
     init(startSym: NTS, src: [Token<NTS.TS, String.Index>]) {
@@ -82,12 +109,16 @@ class Parser<_NTS: NonTerminalSymbol>: BacktrackingParser {
         leave(match)
         return match
         */
+        // TODO: Fork the parser!
+
+        //return startSym.parse(self)
+        stack.append(TreeNode(Token(sym: .Service(__START), start: 0)))
         return startSym.parse(self)
     }
 
     func enter(sym: NTS) {
         let offset = stack.last?.value.end ?? 0
-        stack.append(TreeNode(Token(sym: sym, start: offset)))
+        stack.append(TreeNode(Token(sym: .General(sym), start: offset)))
         onAction?(self, .Enter(sym))
     }
 
@@ -98,9 +129,13 @@ class Parser<_NTS: NonTerminalSymbol>: BacktrackingParser {
             parentNode.value.end = node.value.end
             parentNode.childs.append(node)
         }
-        onAction?(self, .Leave(node.value.sym, match))
-        if stack.isEmpty {
-            onAction?(self, .Finish(node, match)) // NB! This may not be the very final point!
+        if let sym = node.value.sym.generalSym {
+            onAction?(self, .Leave(node.value.sym, match))
+        }
+        //if stack.isEmpty {
+        if node.value.sym.serviceSym == __START {
+            assert(node.childs.count <= 1)
+            onAction?(self, .Finish(node.childs.first, match))
         }
     }
 
