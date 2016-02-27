@@ -74,6 +74,6 @@ enum MathNTS: NonTerminalSymbol {
 let src = "(1 + 2 + 3 * 4 * 5) * 6 + 7"
 print("Input: \"\(src)\"")
 let tks = Lexer(syms: MathTS.all, src: src).filter { $0.sym != MathTS.Space } .map { $0 }
-let p = Parser(startSym: MathNTS.S, src: tks)
+let p = Parser(sym: MathNTS.S, src: tks)
 p.onAction = ParserAction<MathNTS>.debug()
 p.parse()
