@@ -1,30 +1,69 @@
 import Foundation
 
-struct Token<Sym, Index: ForwardIndexType>: CustomStringConvertible {
+protocol Token: CustomStringConvertible {
 
-    let sym: Sym
+    typealias Symbol
+    typealias Index: ForwardIndexType
 
-    let start: Index
-    var   end: Index
+    var sym: Symbol { get }
+
+    var start: Index { get }
+    var end: Index { get set }
+
+    var range: Range<Index> { get } // start ..< end
+
+    init(sym: Symbol, start: Index, end: Index)
+    init(sym: Symbol, start: Index) // convenience, end = start
+
+}
+
+extension Token {
 
     var range: Range<Index> {
         return Range(start: start, end: end)
     }
 
-    init(sym: Sym, start: Index) {
-        self.sym = sym
-        self.start = start
-        self.end   = start
+    init(sym: Symbol, start: Index) {
+        self.init(sym: sym, start: start, end: start)
     }
 
-    init(sym: Sym, start: Index, end: Index) {
-        self.sym = sym
-        self.start = start
-        self.end   = end
-    }
+    // MARK: - CustomStringConvertible
 
     var description: String {
-        return "{\(sym) \(start)..\(end)}"
+        return "<\(sym) \(start)..\(end)>"
     }
+
+}
+
+// MARK: - Common token implementations
+
+struct GeneralToken<Symbol, Index: ForwardIndexType>: Token {
+
+    let sym: Symbol
+
+    let start: Index
+    var   end: Index
+
+}
+
+struct TextToken<Symbol>: Token {
+
+    typealias Index = String.Index
+
+    let sym: Symbol
+
+    let start: Index
+    var   end: Index
+
+}
+
+struct CommonToken<Symbol>: Token {
+
+    typealias Index = Int
+
+    let sym: Symbol
+
+    let start: Index
+    var   end: Index
 
 }

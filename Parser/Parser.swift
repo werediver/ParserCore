@@ -28,7 +28,7 @@ enum ParserAction<NTS: NonTerminalSymbol> {
 
     case Accept(TS, Bool)
 
-    case Finish(TreeNode<Token<NTS, Int>>, Bool)
+    case Finish(TreeNode<CommonToken<NTS>>, Bool)
 
     // TODO: Move to an extension.
     // TODO: Print tokens' source text fragments (find a way to).
@@ -63,12 +63,12 @@ class Parser<NTS: NonTerminalSymbol>: BacktrackingParser {
     var onAction: ((Parser<NTS>, Action) -> ())?
 
     let startSym: NTS
-    let src: [Token<NTS.TS, String.Index>]
+    let src: [TextToken<NTS.TS>]
 
-    var stack = [TreeNode<Token<NTS, Int>>]()
+    var stack = [TreeNode<CommonToken<NTS>>]()
     var offset: Int? { return stack.last?.value.end } // For convenience
 
-    init(sym: NTS, src: [Token<NTS.TS, String.Index>]) {
+    init(sym: NTS, src: [TextToken<NTS.TS>]) {
         self.startSym = sym
         self.src = src
     }
@@ -80,7 +80,7 @@ class Parser<NTS: NonTerminalSymbol>: BacktrackingParser {
 
     func enter(sym: NTS) {
         let offset = stack.last?.value.end ?? 0
-        stack.append(TreeNode(Token(sym: sym, start: offset)))
+        stack.append(TreeNode(CommonToken(sym: sym, start: offset)))
         onAction?(self, .Enter(sym))
     }
 

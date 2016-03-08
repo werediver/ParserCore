@@ -32,15 +32,15 @@ struct Lexer<Sym: TerminalSymbol>: SequenceType {
 
 }
 
-struct LexerGen<Sym: TerminalSymbol>: GeneratorType {
+struct LexerGen<Symbol: TerminalSymbol>: GeneratorType {
 
-    typealias Element = Token<Sym, String.Index>
+    typealias Element = TextToken<Symbol>
 
-    let syms: [Sym]
+    let syms: [Symbol]
     let src: String
     var offset = 0
 
-    init(syms: [Sym], src: String) {
+    init(syms: [Symbol], src: String) {
         self.syms = syms
         self.src = src
     }
@@ -55,7 +55,7 @@ struct LexerGen<Sym: TerminalSymbol>: GeneratorType {
             let len = sym.match(rest)
             if  len > 0 {
                 let end = start.advancedBy(len)
-                token = Token(sym: sym, start: start, end: end)
+                token = Element(sym: sym, start: start, end: end)
                 offset += len
                 break
             }
