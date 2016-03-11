@@ -37,7 +37,7 @@ extension Token {
 
 // MARK: - Common token implementations
 
-struct GeneralToken<Symbol, Index: ForwardIndexType>: Token {
+struct GenericToken<Symbol, Index: ForwardIndexType>: Token {
 
     let sym: Symbol
 

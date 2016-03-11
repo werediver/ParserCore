@@ -4,10 +4,10 @@ protocol BacktrackingParser {
 
     typealias NTS: NonTerminalSymbol
 
-    func enter(s: NTS)
+    func enter(sym: NTS)
     func leave(match: Bool)
 
-    func accept(s: NTS.TS) -> Bool
+    func accept(sym: NTS.TS) -> Bool
 
 }
 
@@ -28,14 +28,14 @@ enum ParserAction<NTS: NonTerminalSymbol> {
 
     case Accept(TS, Bool)
 
-    case Finish(TreeNode<CommonToken<NTS>>, Bool)
+    case Finish(GenericTreeNode<CommonToken<NTS>>, Bool)
 
     // TODO: Move to an extension.
     // TODO: Print tokens' source text fragments (find a way to).
-    static func debug() -> (p: Parser<NTS>, a: ParserAction<NTS>) -> () {
+    static func debug() -> (a: ParserAction<NTS>, p: Parser<NTS>) -> () {
         let indent = "    "
         var indentLevel = 0
-        return { p, a in
+        return { a, p in
             func p(s: String) {
                 print(indent.mul(indentLevel) + (p.offset != nil ? "\(p.offset!): " : "" ) + s)
             }
@@ -49,39 +49,59 @@ enum ParserAction<NTS: NonTerminalSymbol> {
                 case let .Accept(ts, match):
                     p((match ? "found: " : "expected: ") + "\(ts)")
                 case let .Finish(tree, match):
-                    print("overall match: \(match)\n\(tree.dump(.Indent))")
+                    print("overall match: \(match)\n\(tree.treeDescription(includePath: false))")
             }
         }
     }
 
 }
 
-class Parser<NTS: NonTerminalSymbol>: BacktrackingParser {
+final class Parser<NTS: NonTerminalSymbol>: BacktrackingParser, ActionProducer {
 
     typealias Action = ParserAction<NTS>
 
-    var onAction: ((Parser<NTS>, Action) -> ())?
+    var onAction: ((Action, sender: Parser<NTS>) -> ())?
+
+    weak var parent: Parser<NTS>?
+    let tag: String?
+
+    typealias SrcToken = TextToken<NTS.TS>
+    typealias OutToken = CommonToken<NTS>
 
     let startSym: NTS
-    let src: [TextToken<NTS.TS>]
+    let src: [SrcToken]
 
-    var stack = [TreeNode<CommonToken<NTS>>]()
+    var stack = [GenericTreeNode<OutToken>]()
     var offset: Int? { return stack.last?.value.end } // For convenience
 
-    init(sym: NTS, src: [TextToken<NTS.TS>]) {
+    init(sym: NTS, src: [SrcToken]) {
         self.startSym = sym
         self.src = src
+
+        self.parent = nil
+        self.tag = nil
+    }
+
+    init(parentParser: Parser<NTS>, tag: String) {
+        self.parent = parentParser
+        self.tag = tag
+
+        let parentToken = parentParser.stack.last!.value
+
+        self.startSym = parentToken.sym
+        self.src = parentParser.src
+        // The forked parser will continue to build the parent node.
+        self.stack = [GenericTreeNode(OutToken(sym: parentToken.sym, start: parentToken.end))]
     }
 
     func parse() -> Bool {
-        // TODO: Fork the parser!
         return startSym.parse(self)
     }
 
     func enter(sym: NTS) {
         let offset = stack.last?.value.end ?? 0
-        stack.append(TreeNode(CommonToken(sym: sym, start: offset)))
-        onAction?(self, .Enter(sym))
+        stack.append(GenericTreeNode(OutToken(sym: sym, start: offset)))
+        onAction?(.Enter(sym), sender: self)
     }
 
     func leave(match: Bool) {
@@ -89,11 +109,11 @@ class Parser<NTS: NonTerminalSymbol>: BacktrackingParser {
         if match && !stack.isEmpty {
             let parentNode = stack.last!
             parentNode.value.end = node.value.end
-            parentNode.childs.append(node)
+            parentNode.children.append(node)
         }
-        onAction?(self, .Leave(node.value.sym, match))
+        onAction?(.Leave(node.value.sym, match), sender: self)
         if stack.isEmpty { // False Finish-events possible! (fork the parser!)
-            onAction?(self, .Finish(node, match))
+            onAction?(.Finish(node, match), sender: self)
         }
     }
 
@@ -106,7 +126,7 @@ class Parser<NTS: NonTerminalSymbol>: BacktrackingParser {
         } else {
             match = false
         }
-        onAction?(self, .Accept(sym, match))
+        onAction?(.Accept(sym, match), sender: self)
         return match
     }
 

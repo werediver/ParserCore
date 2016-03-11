@@ -1,5 +1,12 @@
 import Foundation
 
+protocol TreeNode: class {
+
+    weak var parent: Self? { get set }
+    var children: [Self] { get set }
+
+}
+
 enum TraverseMode {
 
     case DepthFirst
@@ -7,35 +14,18 @@ enum TraverseMode {
 
 }
 
-enum DumpMode {
-    case Flat
-    case Indent
-}
+extension TreeNode {
 
-class TreeNode<Value> {
-
-    weak var parent: TreeNode?
-
-    var childs: [TreeNode] {
-        didSet {
-            updateChilds()
+    var root: Self {
+        var node = self
+        while let p = node.parent {
+            node = p
         }
+        return node
     }
 
-    func updateChilds() {
-        childs.forEach { $0.parent = self }
-    }
-
-    var value: Value
-
-    init(_ value: Value, _ childs: [TreeNode] = []) {
-        self.value = value
-        self.childs = childs
-        updateChilds()
-    }
-
-    var path: [TreeNode] {
-        var path = [TreeNode]()
+    var path: [Self] {
+        var path = [Self]()
         var node = self
         while let p = node.parent {
             path.append(p)
@@ -44,40 +34,72 @@ class TreeNode<Value> {
         return path.reverse()
     }
 
-    func traverse(mode: TraverseMode, @noescape action: (node: TreeNode<Value>) throws -> ()) rethrows {
-        var fringe = [TreeNode]()
+    func updateChildren() {
+        children.forEach { $0.parent = self }
+    }
+
+    func traverse(mode: TraverseMode, @noescape body: (node: Self) throws -> ()) rethrows {
+        var fringe = [Self]()
 
         fringe.append(self)
         while fringe.count > 0 {
-            let node: TreeNode, childs: [TreeNode]
+            let node: Self, children: [Self]
             switch mode {
                 case .DepthFirst:
                     node = fringe.removeLast()
-                    childs = node.childs.reverse()
+                    children = node.children.reverse()
                 case .BreadthFirst:
                     node = fringe.removeFirst()
-                    childs = node.childs
+                    children = node.children
             }
-            fringe.appendContentsOf(childs)
-            try action(node: node)
+            fringe.appendContentsOf(children)
+            try body(node: node)
         }
     }
 
-    func dump(mode: DumpMode) -> String {
+}
+
+extension TreeNode where Self: CustomStringConvertible {
+
+    func treeDescription(includePath includePath: Bool) -> String {
         var s = ""
-        switch mode {
-            case .Flat:
-                traverse(.DepthFirst) { node in
-                    let qname = (node.path.map { "\($0.value)" } + ["\(node.value)"]).joinWithSeparator("/")
-                    s += qname + "\n"
-                }
-            case .Indent:
-                traverse(.DepthFirst) { node in
-                    let indent = "  "
-                    s += indent.mul(node.path.count) + "\(node.value)\n"
-                }
+        traverse(.DepthFirst) { node in
+            if includePath {
+                let qname = (node.path.map { "\($0)" } + ["\(node)"]).joinWithSeparator("/")
+                s += qname + "\n"
+            } else {
+                let indent = "  "
+                s += indent.mul(node.path.count) + "\(node)\n"
+            }
         }
         return s
+    }
+
+}
+
+final class GenericTreeNode<Value>: TreeNode, CustomStringConvertible {
+
+    weak var parent: GenericTreeNode?
+
+    var children: [GenericTreeNode] {
+        didSet {
+            updateChildren()
+        }
+    }
+
+    var value: Value
+
+    init(_ value: Value, _ children: [GenericTreeNode] = []) {
+        self.value = value
+        self.children = children
+        updateChildren()
+    }
+
+    // MARK: - CustomStringConvertible
+
+    var description: String {
+        return (value as? CustomStringConvertible)?.description
+            ?? "\(self.dynamicType)" // Fallback, close to the default behaviour.
     }
 
 }
