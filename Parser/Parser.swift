@@ -19,6 +19,53 @@ protocol NonTerminalSymbol {
 
 }
 
+final class CommonTokenTreeNode<Symbol>: Token, TreeNode, CustomStringConvertible {
+
+    // MARK: - Token
+
+    typealias Index = Int
+
+    let sym: Symbol
+
+    let start: Index
+    var   end: Index
+
+    // Required by `Token` protocol
+    convenience init(sym: Symbol, start: Index, end: Index) {
+        self.init(sym: sym, start: start, end: end, children: [])
+    }
+
+    // MARK: - TreeNode
+
+    weak var parent: CommonTokenTreeNode?
+
+    var children: [CommonTokenTreeNode] {
+        didSet {
+            updateChildren()
+        }
+    }
+
+    init(sym: Symbol, start: Index, end: Index, children: [CommonTokenTreeNode]) {
+        self.sym = sym
+        self.start = start
+        self.end = end
+        self.children = children
+        updateChildren()
+    }
+
+    convenience init(sym: Symbol, start: Index, children: [CommonTokenTreeNode] = []) {
+        self.init(sym: sym, start: start, end: start, children: children)
+    }
+
+    // MARK: - CustomStringConvertible
+
+    var description: String {
+        return (sym as? CustomStringConvertible)?.description
+            ?? "\(self.dynamicType)" // Fallback, close to the default behaviour.
+    }
+
+}
+
 enum ParserAction<NTS: NonTerminalSymbol> {
 
     typealias TS = NTS.TS
