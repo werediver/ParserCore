@@ -19,53 +19,6 @@ protocol NonTerminalSymbol {
 
 }
 
-final class CommonTokenTreeNode<Symbol>: Token, TreeNode, CustomStringConvertible {
-
-    // MARK: - Token
-
-    typealias Index = Int
-
-    let sym: Symbol
-
-    let start: Index
-    var   end: Index
-
-    // Required by `Token` protocol
-    convenience init(sym: Symbol, start: Index, end: Index) {
-        self.init(sym: sym, start: start, end: end, children: [])
-    }
-
-    // MARK: - TreeNode
-
-    weak var parent: CommonTokenTreeNode?
-
-    var children: [CommonTokenTreeNode] {
-        didSet {
-            updateChildren()
-        }
-    }
-
-    init(sym: Symbol, start: Index, end: Index, children: [CommonTokenTreeNode]) {
-        self.sym = sym
-        self.start = start
-        self.end = end
-        self.children = children
-        updateChildren()
-    }
-
-    convenience init(sym: Symbol, start: Index, children: [CommonTokenTreeNode] = []) {
-        self.init(sym: sym, start: start, end: start, children: children)
-    }
-
-    // MARK: - CustomStringConvertible
-
-    var description: String {
-        return (sym as? CustomStringConvertible)?.description
-            ?? "\(self.dynamicType)" // Fallback, close to the default behaviour.
-    }
-
-}
-
 enum ParserAction<NTS: NonTerminalSymbol> {
 
     typealias TS = NTS.TS
@@ -107,10 +60,7 @@ final class Parser<NTS: NonTerminalSymbol>: BacktrackingParser, ActionProducer {
 
     typealias Action = ParserAction<NTS>
 
-    var onAction: ((Action, sender: Parser<NTS>) -> ())?
-
-    weak var parent: Parser<NTS>?
-    let tag: String?
+    var onAction: ((Action, sender: Parser) -> ())?
 
     typealias SrcToken = TextToken<NTS.TS>
     typealias OutToken = CommonToken<NTS>
@@ -118,6 +68,7 @@ final class Parser<NTS: NonTerminalSymbol>: BacktrackingParser, ActionProducer {
     let startSym: NTS
     let src: [SrcToken]
 
+    /// Parse tree stack.
     var stack = [GenericTreeNode<OutToken>]()
     var offset: Int? { return stack.last?.value.end } // For convenience
 
@@ -129,7 +80,61 @@ final class Parser<NTS: NonTerminalSymbol>: BacktrackingParser, ActionProducer {
         self.tag = nil
     }
 
-    init(parentParser: Parser<NTS>, tag: String) {
+    func parse() -> Bool {
+        return startSym.parse(self)
+    }
+
+    func enter(sym: NTS) {
+        if let child = child {
+            child.enter(sym)
+        } else {
+            let offset = stack.last?.value.end ?? 0
+            stack.append(GenericTreeNode(OutToken(sym: sym, start: offset)))
+            onAction?(.Enter(sym), sender: self)
+        }
+    }
+
+    func leave(match: Bool) {
+        if let child = child {
+            child.leave(match)
+        } else {
+            let node = stack.popLast()!
+            if match && !stack.isEmpty {
+                let parentNode = stack.last!
+                parentNode.value.end = node.value.end
+                parentNode.children.append(node)
+            }
+            onAction?(.Leave(node.value.sym, match), sender: self)
+            if stack.isEmpty { // False Finish-events possible! (fork the parser!)
+                onAction?(.Finish(node, match), sender: self)
+            }
+        }
+    }
+
+    func accept(sym: NTS.TS) -> Bool {
+        if let child = child {
+            return child.accept(sym)
+        } else {
+            let node = stack.last!
+            let match: Bool
+            if node.value.end < src.count && src[node.value.end].sym == sym {
+                node.value.end += 1
+                match = true
+            } else {
+                match = false
+            }
+            onAction?(.Accept(sym, match), sender: self)
+            return match
+        }
+    }
+
+    // MARK: - Fork support
+
+    var child: Parser?
+    weak var parent: Parser?
+    let tag: String?
+
+    private init(parentParser: Parser<NTS>, tag: String) {
         self.parent = parentParser
         self.tag = tag
 
@@ -141,40 +146,25 @@ final class Parser<NTS: NonTerminalSymbol>: BacktrackingParser, ActionProducer {
         self.stack = [GenericTreeNode(OutToken(sym: parentToken.sym, start: parentToken.end))]
     }
 
-    func parse() -> Bool {
-        return startSym.parse(self)
-    }
-
-    func enter(sym: NTS) {
-        let offset = stack.last?.value.end ?? 0
-        stack.append(GenericTreeNode(OutToken(sym: sym, start: offset)))
-        onAction?(.Enter(sym), sender: self)
-    }
-
-    func leave(match: Bool) {
-        let node = stack.popLast()!
-        if match && !stack.isEmpty {
-            let parentNode = stack.last!
-            parentNode.value.end = node.value.end
-            parentNode.children.append(node)
-        }
-        onAction?(.Leave(node.value.sym, match), sender: self)
-        if stack.isEmpty { // False Finish-events possible! (fork the parser!)
-            onAction?(.Finish(node, match), sender: self)
-        }
-    }
-
-    func accept(sym: NTS.TS) -> Bool {
-        let node = stack.last!
-        let match: Bool
-        if node.value.end < src.count && src[node.value.end].sym == sym {
-            node.value.end += 1
-            match = true
+    func fork(tag: String) {
+        if let child = child {
+            child.fork(tag)
         } else {
-            match = false
+            child = Parser(parentParser: self, tag: tag)
         }
-        onAction?(.Accept(sym, match), sender: self)
-        return match
+    }
+
+    func unfork(match: Bool) {
+        if let child = child {
+            child.unfork(match)
+        } else {
+            let parent = self.parent!
+            if match {
+                let node = stack.popLast()!
+                parent.stack.last?.children.appendContentsOf(node.children)
+            }
+            parent.child = nil
+        }
     }
 
 }
