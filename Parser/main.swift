@@ -16,6 +16,8 @@ T -> N | "(" S ")"
 
 enum MathTS: RegEx, TerminalSymbol {
 
+    typealias Source = String
+
     case Space = "^\\s+"
     case Num = "^\\d+"
     case AddTierOp = "^[+-]"
@@ -25,11 +27,13 @@ enum MathTS: RegEx, TerminalSymbol {
 
     static let all: [MathTS] = [.Space, .Num, .AddTierOp, .MulTierOp, .ParOp, .ParCl]
 
+    var symbolName: String { return "\(self)" }
+
 }
 
 extension BacktrackingParser {
 
-    func parse(sym: NTS, alts: (() -> Bool)...) -> Bool {
+    func parse(sym: Symbol, alts: (() -> Bool)...) -> Bool {
         for alt in alts {
             enter(sym)
             let match = alt()
@@ -45,26 +49,28 @@ extension BacktrackingParser {
 
 enum MathNTS: NonTerminalSymbol {
 
-    typealias TS = MathTS
+    typealias SourceSymbol = MathTS
 
     case S, P, T
 
-    func parse<Parser : BacktrackingParser where Parser.NTS == MathNTS>(p: Parser) -> Bool {
+    var symbolName: String { return "\(self)" }
+
+    func parse<Parser: BacktrackingParser>(p: Parser) -> Bool {
         switch self {
             case .S:
-                return p.parse(.S, alts:
-                    { MathNTS.P.parse(p) && p.accept(.AddTierOp) && MathNTS.S.parse(p) },
+                return p.parse(MathNTS.S, alts:
+                    { MathNTS.P.parse(p) && p.accept(MathTS.AddTierOp) && MathNTS.S.parse(p) },
                     { MathNTS.P.parse(p) }
                 )
             case .P:
-                return p.parse(.P, alts:
-                    { MathNTS.T.parse(p) && p.accept(.MulTierOp) && MathNTS.P.parse(p) },
+                return p.parse(MathNTS.P, alts:
+                    { MathNTS.T.parse(p) && p.accept(MathTS.MulTierOp) && MathNTS.P.parse(p) },
                     { MathNTS.T.parse(p) }
                 )
             case .T:
-                return p.parse(.T, alts:
-                    { p.accept(.ParOp) && MathNTS.S.parse(p) && p.accept(.ParCl) },
-                    { p.accept(.Num) }
+                return p.parse(MathNTS.T, alts:
+                    { p.accept(MathTS.ParOp) && MathNTS.S.parse(p) && p.accept(MathTS.ParCl) },
+                    { p.accept(MathTS.Num) }
                 )
         }
     }
@@ -74,6 +80,6 @@ enum MathNTS: NonTerminalSymbol {
 let src = "(1 + 2 + 3 * 4 * 5) * 6 + 7"
 print("Input: \"\(src)\"")
 let tks = Lexer(syms: MathTS.all, src: src).filter { $0.sym != MathTS.Space } .map { $0 }
-let p = Parser(sym: MathNTS.S, src: tks)
-p.onAction = ParserAction<MathNTS>.debug()
-p.parse()
+let p = Parser(src: tks)
+p.onAction = ParserAction.debug()
+MathNTS.S.parse(p)

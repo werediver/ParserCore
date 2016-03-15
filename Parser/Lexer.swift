@@ -1,27 +1,22 @@
 import Foundation
 
-protocol TerminalSymbol: Equatable {
+extension TerminalSymbol where Self.Source == String, Self: RawRepresentable, Self.RawValue == RegEx {
 
-    func match(src: String) -> Int
-
-}
-
-extension TerminalSymbol where Self: RawRepresentable, Self.RawValue == RegEx {
-
-    func match(src: String) -> Int {
+    func match(src: Source) -> Int {
         return rawValue.rangeOfFirstMatchInString(src)?.count ?? 0
     }
 
 }
 
-struct Lexer<Sym: TerminalSymbol>: SequenceType {
+struct Lexer<Symbol: TerminalSymbol
+    where Symbol.Source == String>: SequenceType {
 
-    typealias Generator = LexerGen<Sym>
+    typealias Generator = LexerGen<Symbol>
 
-    let syms: [Sym]
+    let syms: [Symbol]
     let src: String
 
-    init(syms: [Sym], src: String) {
+    init(syms: [Symbol], src: String) {
         self.syms = syms
         self.src = src
     }
@@ -32,7 +27,8 @@ struct Lexer<Sym: TerminalSymbol>: SequenceType {
 
 }
 
-struct LexerGen<Symbol: TerminalSymbol>: GeneratorType {
+struct LexerGen<Symbol: TerminalSymbol
+    where Symbol.Source == String>: GeneratorType {
 
     typealias Element = TextToken<Symbol>
 
