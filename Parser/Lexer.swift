@@ -1,63 +1,60 @@
 import Foundation
 
-extension TerminalSymbol where Self.Source == String, Self: RawRepresentable, Self.RawValue == RegEx {
+class Lexer<TS: TerminalSymbol>: SequenceType {
 
-    func match(src: Source) -> Int {
-        return rawValue.rangeOfFirstMatchInString(src)?.count ?? 0
-    }
+    typealias Token = GenericToken<TS, TS.Source.Index>
+    typealias Generator = AnyGenerator<Token>
 
-}
+    let src: TS.Source
 
-struct Lexer<Symbol: TerminalSymbol
-    where Symbol.Source == String>: SequenceType {
-
-    typealias Generator = LexerGen<Symbol>
-
-    let syms: [Symbol]
-    let src: String
-
-    init(syms: [Symbol], src: String) {
-        self.syms = syms
+    init(src: TS.Source) {
         self.src = src
     }
 
     func generate() -> Generator {
-        return Generator(syms: syms, src: src)
+        let src = self.src
+        var offset = src.startIndex
+        return anyGenerator {
+            var token: Token?
+            let rest = src.suffixFrom(offset)
+            if rest.count > 0 {
+                for sym in TS.all {
+                    let len = sym.match(rest)
+                    if len > 0 {
+                        let tokenEnd = offset.advancedBy(len)
+                        token = Token(sym: sym, start: offset, end: tokenEnd)
+                        offset = tokenEnd
+                    }
+                }
+                if token == nil {
+                    //throw xxx
+                }
+            }
+            return token
+        }
     }
 
 }
 
-struct LexerGen<Symbol: TerminalSymbol
-    where Symbol.Source == String>: GeneratorType {
+// MARK: - `String` support
 
-    typealias Element = TextToken<Symbol>
+extension Lexer
+    where TS.Source == String.CharacterView
+{
 
-    let syms: [Symbol]
-    let src: String
-    var offset = 0
-
-    init(syms: [Symbol], src: String) {
-        self.syms = syms
-        self.src = src
+    convenience init(src: String) {
+        self.init(src: src.characters)
     }
 
-    mutating func next() -> Element? {
-        var token: Element? = nil
+}
 
-        let start = src.startIndex.advancedBy(offset)
-        let rest  = src.substringFromIndex(start)
+extension TerminalSymbol
+    where Source == String.CharacterView,
+          Self: RawRepresentable, Self.RawValue == RegEx
+{
 
-        for sym in syms {
-            let len = sym.match(rest)
-            if  len > 0 {
-                let end = start.advancedBy(len)
-                token = Element(sym: sym, start: start, end: end)
-                offset += len
-                break
-            }
-        }
-
-        return token
+    func match(src: Source.SubSequence) -> Source.Index.Distance {
+        return rawValue.rangeOfFirstMatchInString(String(src), options: .Anchored)?.count ?? 0
     }
 
 }

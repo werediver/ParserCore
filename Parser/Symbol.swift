@@ -4,17 +4,31 @@ protocol Symbol {
 
     var symbolName: String { get }
 
+    func isEqual(sym: Symbol) -> Bool
+
 }
 
-func ==(lhs: Symbol, rhs: Symbol) -> Bool {
-    return lhs.symbolName == rhs.symbolName
+extension Symbol {
+
+    var symbolName: String { return "\(self)" }
+
+    func isEqual(sym: Symbol) -> Bool {
+        return symbolName == sym.symbolName
+    }
+
+}
+
+func ==<S: Symbol>(lhs: S, rhs: S) -> Bool {
+    return lhs.isEqual(rhs)
 }
 
 protocol TerminalSymbol: Symbol {
 
-    typealias Source
+    typealias Source: CollectionType
 
-    func match(src: Source) -> Int
+    func match(src: Source.SubSequence) -> Source.Index.Distance
+
+    static var all: [Self] { get }
 
 }
 
@@ -22,6 +36,8 @@ protocol NonTerminalSymbol: Symbol {
 
     typealias SourceSymbol: TerminalSymbol
 
-    func parse<Parser: BacktrackingParser>(p: Parser) -> Bool
+    static var startSymbol: Self { get }
+
+    func parse<Parser: ParserType where Parser.NTS == Self>(p: Parser) -> Bool
 
 }

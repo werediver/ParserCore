@@ -8,7 +8,6 @@ struct RegEx {
         regex = try! NSRegularExpression(pattern: pattern, options: options)
     }
 
-
     func enumerateMatchesInString(s: String, options: NSMatchingOptions = [], range: Range<String.Index>? = nil, body: (NSTextCheckingResult?, NSMatchingFlags) -> Bool) {
         let nsRange = s.nsRange(range ?? s.fullRange)
         regex.enumerateMatchesInString(s, options: options, range: nsRange) { result, flags, stop in

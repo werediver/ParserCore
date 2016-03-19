@@ -1,6 +1,6 @@
 import Foundation
 
-protocol Token: CustomStringConvertible {
+protocol TokenType: CustomStringConvertible {
 
     typealias Symbol
     typealias Index: ForwardIndexType
@@ -17,7 +17,7 @@ protocol Token: CustomStringConvertible {
 
 }
 
-extension Token {
+extension TokenType {
 
     var range: Range<Index> {
         return Range(start: start, end: end)
@@ -37,7 +37,7 @@ extension Token {
 
 // MARK: - Common token implementations
 
-struct GenericToken<Symbol, Index: ForwardIndexType>: Token {
+struct GenericToken<Symbol, Index: ForwardIndexType>: TokenType {
 
     let sym: Symbol
 
@@ -46,7 +46,7 @@ struct GenericToken<Symbol, Index: ForwardIndexType>: Token {
 
 }
 
-struct TextToken<Symbol>: Token {
+struct TextToken<Symbol>: TokenType {
 
     typealias Index = String.Index
 
@@ -57,7 +57,7 @@ struct TextToken<Symbol>: Token {
 
 }
 
-struct CommonToken<Symbol>: Token {
+struct CommonToken<Symbol>: TokenType {
 
     typealias Index = Int
 
