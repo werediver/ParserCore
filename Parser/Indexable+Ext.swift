@@ -4,6 +4,8 @@ import Foundation
 
 extension Indexable {
 
+    var fullRange: Range<Index> { return startIndex ..< endIndex }
+
     var count: Index.Distance {
         return startIndex.distanceTo(endIndex)
     }

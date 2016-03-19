@@ -38,12 +38,33 @@ class Lexer<TS: TerminalSymbol>: SequenceType {
 
 // MARK: - `String` support
 
+struct CaretPosition: CustomStringConvertible {
+
+    var line: Int
+    var offset: Int
+
+    var description: String { return "\(line):\(offset)" }
+
+}
+
 extension Lexer
     where TS.Source == String.CharacterView
 {
 
     convenience init(src: String) {
         self.init(src: src.characters)
+    }
+
+    func caretPosition(index: TS.Source.Index) -> CaretPosition {
+        let eols = (src.startIndex ..< index).flatMap({ (src[$0] == "\n") ? $0 : nil })
+        let (line, lineStartIndex) = eols.fullRange.flatMap({ (eols[$0] < index) ? ($0, eols[$0]) : nil }).last ?? (0, src.startIndex)
+        let offset = lineStartIndex.distanceTo(index)
+        return CaretPosition(line: line, offset: offset)
+    }
+
+    func tokenDescription(token: Token) -> String {
+        let pos = caretPosition(token.start)
+        return "<\(token.sym) \(pos) \"\(String(src[token.range]))\">"
     }
 
 }

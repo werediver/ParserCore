@@ -1,6 +1,6 @@
 import Foundation
 
-protocol TokenType: CustomStringConvertible {
+protocol TokenType: CustomDebugStringConvertible {
 
     typealias Symbol
     typealias Index: ForwardIndexType
@@ -27,9 +27,9 @@ extension TokenType {
         self.init(sym: sym, start: start, end: start)
     }
 
-    // MARK: - CustomStringConvertible
+    // MARK: - CustomDebugStringConvertible
 
-    var description: String {
+    var debugDescription: String {
         return "<\(sym) \(start)..\(end)>"
     }
 

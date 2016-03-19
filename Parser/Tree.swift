@@ -57,19 +57,13 @@ extension TreeNode {
         }
     }
 
-}
-
-extension TreeNode where Self: CustomStringConvertible {
-
-    func treeDescription(includePath includePath: Bool) -> String {
+    func treeDescription(includePath includePath: Bool, description: (Self) -> String) -> String {
         var s = ""
         traverse(.DepthFirst) { node in
             if includePath {
-                let qname = (node.path.map { "\($0)" } + ["\(node)"]).joinWithSeparator("/")
-                s += qname + "\n"
+                s += (node.path.map { "\($0)" } + [description(node)]).joinWithSeparator("/") + "\n"
             } else {
-                let indent = "  "
-                s += indent.mul(node.path.count) + "\(node)\n"
+                s += "    ".mul(node.path.count) + description(node) + "\n"
             }
         }
         return s
@@ -77,7 +71,15 @@ extension TreeNode where Self: CustomStringConvertible {
 
 }
 
-final class GenericTreeNode<Value>: TreeNode, CustomStringConvertible {
+extension TreeNode where Self: CustomStringConvertible {
+
+    func treeDescription(includePath includePath: Bool) -> String {
+        return treeDescription(includePath: includePath, description: { "\($0)" })
+    }
+
+}
+
+final class GenericTreeNode<Value>: TreeNode {
 
     weak var parent: GenericTreeNode?
 
@@ -93,13 +95,6 @@ final class GenericTreeNode<Value>: TreeNode, CustomStringConvertible {
         self.value = value
         self.children = children
         updateChildren()
-    }
-
-    // MARK: - CustomStringConvertible
-
-    var description: String {
-        return (value as? CustomStringConvertible)?.description
-            ?? "\(self.dynamicType)" // Fallback, close to the default behaviour.
     }
 
 }
