@@ -1,6 +1,6 @@
 import Foundation
 
-protocol TreeNode: class {
+protocol TreeNodeType: class {
 
     weak var parent: Self? { get set }
     var children: [Self] { get set }
@@ -14,7 +14,7 @@ enum TraverseMode {
 
 }
 
-extension TreeNode {
+extension TreeNodeType {
 
     var root: Self {
         var node = self
@@ -71,7 +71,7 @@ extension TreeNode {
 
 }
 
-extension TreeNode where Self: CustomStringConvertible {
+extension TreeNodeType where Self: CustomStringConvertible {
 
     func treeDescription(includePath includePath: Bool) -> String {
         return treeDescription(includePath: includePath, description: { "\($0)" })
@@ -79,7 +79,7 @@ extension TreeNode where Self: CustomStringConvertible {
 
 }
 
-final class GenericTreeNode<Value>: TreeNode {
+final class GenericTreeNode<Value>: TreeNodeType {
 
     weak var parent: GenericTreeNode?
 

@@ -10,7 +10,7 @@ import Foundation
 
 protocol ActionProducer {
 
-    typealias Action
+    associatedtype Action
 
     var onAction: ((Action, sender: Self) -> ())? { get set }
 

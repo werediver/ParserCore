@@ -2,34 +2,48 @@ import Foundation
 
 protocol ParserType {
 
-    typealias NTS: NonTerminalSymbol
-    typealias Source: CollectionType
+    associatedtype NTS: NonTerminalSymbolType
+    associatedtype Source: CollectionType // [NTS.SourceSymbol]
+
+    associatedtype Token: TokenType // GenericToken<NTS, Source.Index>
+    associatedtype Node: TreeNodeType // GenericTreeNode<Token>
+
+    var src: Source { get }
+    var tree: Node? { get }
 
     init(_: NTS.Type, src: Source)
 
     func enterSym(sym: NTS)
-    func leaveSymWithMatch(match: Bool)
+    func leaveSym(match match: Bool)
 
-    func acceptSym(sym: NTS.SourceSymbol) -> Bool
+    func enterGroup()
+    func leaveGroup(match match: Bool)
 
-    func pushState()
-    func popState(merge: Bool)
+    func accept(sym: NTS.SourceSymbol) -> Bool
 
 }
 
 extension ParserType {
 
-    func parseSym(sym: NTS, @noescape body: () throws -> Bool) rethrows -> Bool {
+    func parse() -> Bool {
+        return parse(NTS.startSymbol)
+    }
+
+    func parse(sym: NTS) -> Bool {
+        return sym.parse(self)
+    }
+
+    func parse(sym: NTS, @noescape body: () throws -> Bool) rethrows -> Bool {
         enterSym(sym)
         let match = try body()
-        leaveSymWithMatch(match)
+        leaveSym(match: match)
         return match
     }
 
     func parse(@noescape body: () throws -> Bool) rethrows -> Bool {
-        pushState()
+        enterGroup()
         let match = try body()
-        popState(match)
+        leaveGroup(match: match)
         return match
     }
 
@@ -40,12 +54,12 @@ extension ParserType {
 
     func parse(@noescape body: () throws -> Bool, times: Range<Int>) rethrows -> Bool {
         var n = 0
-        pushState()
+        enterGroup()
         while try n < times.endIndex && parse(body) {
             n += 1
         }
         let match = times.contains(n)
-        popState(match)
+        leaveGroup(match: match)
         return match
     }
 
@@ -59,7 +73,7 @@ extension ParserType {
 
 }
 
-class Parser<NTS: NonTerminalSymbol, Source: CollectionType
+class Parser<NTS: NonTerminalSymbolType, Source: CollectionType
     where Source.Generator.Element: TokenType,
           Source.Generator.Element.Symbol == NTS.SourceSymbol,
           Source.Index == Int>: ParserType
@@ -72,18 +86,10 @@ class Parser<NTS: NonTerminalSymbol, Source: CollectionType
     var parseTreeStackRestorePoints = [Int]()
 
     let src: Source
+    var tree: Node? { return parseTreeStack.first }
 
     required init(_: NTS.Type, src: Source) {
         self.src = src
-    }
-
-    func parse() -> Node? {
-        return parse(NTS.startSymbol)
-    }
-
-    func parse(sym: NTS) -> Node? {
-        sym.parse(self)
-        return parseTreeStack.first
     }
 
     func enterSym(sym: NTS) {
@@ -91,7 +97,7 @@ class Parser<NTS: NonTerminalSymbol, Source: CollectionType
         parseTreeStack.append(Node(Token(sym: sym, start: offset)))
     }
 
-    func leaveSymWithMatch(match: Bool) {
+    func leaveSym(match match: Bool) {
         let node = parseTreeStack.popLast()!
         if match {
             if parseTreeStack.isEmpty {
@@ -106,29 +112,17 @@ class Parser<NTS: NonTerminalSymbol, Source: CollectionType
         }
     }
 
-    func acceptSym(sym: NTS.SourceSymbol) -> Bool {
-        let node = parseTreeStack.last!
-        let match: Bool
-        if node.value.end < src.count && src[node.value.end].sym == sym {
-            node.value.end += 1
-            match = true
-        } else {
-            match = false
-        }
-        return match
-    }
-
-    func pushState() {
-        let restorePoint = parseTreeStack.count
+    func enterGroup() {
+        let restorePoint = parseTreeStack.endIndex
         parseTreeStackRestorePoints.append(restorePoint)
 
         let continuationNode = parseTreeStack.last!
         parseTreeStack.append(Node(continuationNode.value))
     }
 
-    func popState(merge: Bool) {
+    func leaveGroup(match match: Bool) {
         let restorePoint = parseTreeStackRestorePoints.popLast()!
-        if merge {
+        if match {
             assert(restorePoint.distanceTo(parseTreeStack.endIndex) == 1)
             let node = parseTreeStack[restorePoint - 1]
             let continuationNode = parseTreeStack[restorePoint]
@@ -140,6 +134,18 @@ class Parser<NTS: NonTerminalSymbol, Source: CollectionType
         } else {
             parseTreeStack.removeRange(restorePoint ..< parseTreeStack.endIndex)
         }
+    }
+
+    func accept(sym: NTS.SourceSymbol) -> Bool {
+        let node = parseTreeStack.last!
+        let match: Bool
+        if node.value.end < src.count && src[node.value.end].sym == sym {
+            node.value.end += 1
+            match = true
+        } else {
+            match = false
+        }
+        return match
     }
 
 }

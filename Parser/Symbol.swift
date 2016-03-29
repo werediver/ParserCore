@@ -4,27 +4,21 @@ protocol Symbol {
 
     var symbolName: String { get }
 
-    func isEqual(sym: Symbol) -> Bool
-
 }
 
 extension Symbol {
 
     var symbolName: String { return "\(self)" }
 
-    func isEqual(sym: Symbol) -> Bool {
-        return symbolName == sym.symbolName
-    }
-
 }
 
 func ==<S: Symbol>(lhs: S, rhs: S) -> Bool {
-    return lhs.isEqual(rhs)
+    return lhs.symbolName == rhs.symbolName
 }
 
-protocol TerminalSymbol: Symbol {
+protocol TerminalSymbolType: Symbol {
 
-    typealias Source: CollectionType
+    associatedtype Source: CollectionType
 
     func match(src: Source.SubSequence) -> Source.Index.Distance
 
@@ -32,9 +26,9 @@ protocol TerminalSymbol: Symbol {
 
 }
 
-protocol NonTerminalSymbol: Symbol {
+protocol NonTerminalSymbolType: Symbol {
 
-    typealias SourceSymbol: TerminalSymbol
+    associatedtype SourceSymbol: TerminalSymbolType
 
     static var startSymbol: Self { get }
 

@@ -2,8 +2,8 @@ import Foundation
 
 protocol TokenType: CustomDebugStringConvertible {
 
-    typealias Symbol
-    typealias Index: ForwardIndexType
+    associatedtype Symbol
+    associatedtype Index: ForwardIndexType
 
     var sym: Symbol { get }
 
@@ -20,7 +20,7 @@ protocol TokenType: CustomDebugStringConvertible {
 extension TokenType {
 
     var range: Range<Index> {
-        return Range(start: start, end: end)
+        return start ..< end
     }
 
     init(sym: Symbol, start: Index) {

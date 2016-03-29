@@ -1,6 +1,6 @@
 import Foundation
 
-enum MathTS: RegEx, TerminalSymbol {
+enum MathTS: RegEx, TerminalSymbolType {
 
     typealias Source = String.CharacterView
 
@@ -15,7 +15,7 @@ enum MathTS: RegEx, TerminalSymbol {
 
 }
 
-enum DeepMathNTS: NonTerminalSymbol {
+enum DeepMathNTS: NonTerminalSymbolType {
 
     typealias SourceSymbol = MathTS
 
@@ -24,22 +24,22 @@ enum DeepMathNTS: NonTerminalSymbol {
     static var startSymbol: DeepMathNTS { return .S }
 
     func parse<Parser: ParserType where Parser.NTS == DeepMathNTS>(p: Parser) -> Bool {
-        return p.parseSym(self) {
+        return p.parse(self) {
             switch self {
                 case S:
-                    return P.parse(p) && p.parseOpt { p.acceptSym(.AddTierOp) && S.parse(p) }
+                    return p.parse(.P) && p.parseOpt { p.accept(.AddTierOp) && p.parse(.S) }
                 case P:
-                    return T.parse(p) && p.parseOpt { p.acceptSym(.MulTierOp) && P.parse(p) }
+                    return p.parse(.T) && p.parseOpt { p.accept(.MulTierOp) && p.parse(.P) }
                 case T:
-                    return p.parse { p.acceptSym(.ParOp) && S.parse(p) && p.acceptSym(.ParCl) }
-                        || p.parse { p.acceptSym(.Num) }
+                    return p.parse { p.accept(.ParOp) && p.parse(.S) && p.accept(.ParCl) }
+                        || p.parse { p.accept(.Num) }
             }
         }
     }
 
 }
 
-enum ShallowMathNTS: NonTerminalSymbol {
+enum ShallowMathNTS: NonTerminalSymbolType {
 
     typealias SourceSymbol = MathTS
 
@@ -48,15 +48,15 @@ enum ShallowMathNTS: NonTerminalSymbol {
     static var startSymbol: ShallowMathNTS { return .S }
 
     func parse<Parser: ParserType where Parser.NTS == ShallowMathNTS>(p: Parser) -> Bool {
-        return p.parseSym(self) {
+        return p.parse(self) {
             switch self {
                 case S:
-                    return P.parse(p) && p.parseZeroOrMore { p.acceptSym(.AddTierOp) && P.parse(p) }
+                    return p.parse(.P) && p.parseZeroOrMore { p.accept(.AddTierOp) && p.parse(.P) }
                 case P:
-                    return T.parse(p) && p.parseZeroOrMore { p.acceptSym(.MulTierOp) && T.parse(p) }
+                    return p.parse(.T) && p.parseZeroOrMore { p.accept(.MulTierOp) && p.parse(.T) }
                 case T:
-                    return p.parse { p.acceptSym(.ParOp) && S.parse(p) && p.acceptSym(.ParCl) }
-                        || p.parse { p.acceptSym(.Num) }
+                    return p.parse { p.accept(.ParOp) && p.parse(.S) && p.accept(.ParCl) }
+                        || p.parse { p.accept(.Num) }
             }
         }
     }
@@ -69,9 +69,9 @@ let tss = lexer.filter { $0.sym != .Space }
 //print(tss)
 //let p = Parser(DeepMathNTS.self, src: tss)
 let p = Parser(ShallowMathNTS.self, src: tss)
-let tree = p.parse()
-//print(tree?.treeDescription(includePath: false) ?? "Invalid input")
-print(tree?.treeDescription(includePath: false, description: { node in
+p.parse()
+//print(p.tree?.treeDescription(includePath: false) ?? "Invalid input")
+print(p.tree?.treeDescription(includePath: false, description: { node in
     var s = "\(node.value.sym)"
     if node.children.count == 0 {
         s += " (" + tss[node.value.range].map(lexer.tokenDescription).joinWithSeparator(" ") + ")"

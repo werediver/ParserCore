@@ -1,24 +1,24 @@
 import Foundation
 
-class Lexer<TS: TerminalSymbol>: SequenceType {
+class Lexer<TerminalSymbol: TerminalSymbolType>: SequenceType {
 
-    typealias Token = GenericToken<TS, TS.Source.Index>
+    typealias Token = GenericToken<TerminalSymbol, TerminalSymbol.Source.Index>
     typealias Generator = AnyGenerator<Token>
 
-    let src: TS.Source
+    let src: TerminalSymbol.Source
 
-    init(src: TS.Source) {
+    init(src: TerminalSymbol.Source) {
         self.src = src
     }
 
     func generate() -> Generator {
         let src = self.src
         var offset = src.startIndex
-        return anyGenerator {
+        return AnyGenerator {
             var token: Token?
             let rest = src.suffixFrom(offset)
             if rest.count > 0 {
-                for sym in TS.all {
+                for sym in TerminalSymbol.all {
                     let len = sym.match(rest)
                     if len > 0 {
                         let tokenEnd = offset.advancedBy(len)
@@ -27,7 +27,8 @@ class Lexer<TS: TerminalSymbol>: SequenceType {
                     }
                 }
                 if token == nil {
-                    //throw xxx
+                    //throw xxx // Can't throw here.
+                    print("Lexer FAILED")
                 }
             }
             return token
@@ -41,25 +42,25 @@ class Lexer<TS: TerminalSymbol>: SequenceType {
 struct CaretPosition: CustomStringConvertible {
 
     var line: Int
-    var offset: Int
+    var column: Int
 
-    var description: String { return "\(line):\(offset)" }
+    var description: String { return "\(line):\(column)" }
 
 }
 
 extension Lexer
-    where TS.Source == String.CharacterView
+    where TerminalSymbol.Source == String.CharacterView
 {
 
     convenience init(src: String) {
         self.init(src: src.characters)
     }
 
-    func caretPosition(index: TS.Source.Index) -> CaretPosition {
-        let eols = (src.startIndex ..< index).flatMap({ (src[$0] == "\n") ? $0 : nil })
-        let (line, lineStartIndex) = eols.fullRange.flatMap({ (eols[$0] < index) ? ($0, eols[$0]) : nil }).last ?? (0, src.startIndex)
-        let offset = lineStartIndex.distanceTo(index)
-        return CaretPosition(line: line, offset: offset)
+    func caretPosition(srcIndex: TerminalSymbol.Source.Index) -> CaretPosition {
+        let eols = (src.startIndex ..< srcIndex).flatMap { (src[$0] == "\n") ? $0 : nil }
+        let (line, lineStartIndex) = eols.fullRange.flatMap({ (eols[$0] < srcIndex) ? ($0, eols[$0]) : nil }).last ?? (0, src.startIndex)
+        let column = lineStartIndex.distanceTo(srcIndex)
+        return CaretPosition(line: line, column: column)
     }
 
     func tokenDescription(token: Token) -> String {
@@ -69,7 +70,7 @@ extension Lexer
 
 }
 
-extension TerminalSymbol
+extension TerminalSymbolType
     where Source == String.CharacterView,
           Self: RawRepresentable, Self.RawValue == RegEx
 {
