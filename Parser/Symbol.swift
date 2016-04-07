@@ -32,6 +32,6 @@ protocol NonTerminalSymbolType: Symbol {
 
     static var startSymbol: Self { get }
 
-    func parse<Parser: ParserType where Parser.NTS == Self>(p: Parser) -> Bool
+    func parse<Parser: ParserType where Parser.NonTerminalSymbol == Self>(p: Parser) -> Bool
 
 }

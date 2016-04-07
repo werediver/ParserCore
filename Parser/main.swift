@@ -15,6 +15,12 @@ enum MathTS: RegEx, TerminalSymbolType {
 
 }
 
+/// Very simple grammar for arithmetic expressions:
+///
+///     S -> P | P '+' S
+///     P -> T | T '*' P
+///     T -> '(' S ')' | NUM
+///
 enum DeepMathNTS: NonTerminalSymbolType {
 
     typealias SourceSymbol = MathTS
@@ -23,7 +29,7 @@ enum DeepMathNTS: NonTerminalSymbolType {
 
     static var startSymbol: DeepMathNTS { return .S }
 
-    func parse<Parser: ParserType where Parser.NTS == DeepMathNTS>(p: Parser) -> Bool {
+    func parse<Parser: ParserType where Parser.NonTerminalSymbol == DeepMathNTS>(p: Parser) -> Bool {
         return p.parse(self) {
             switch self {
                 case S:
@@ -39,6 +45,12 @@ enum DeepMathNTS: NonTerminalSymbolType {
 
 }
 
+/// Very simple grammar for arithmetic expressions:
+///
+///     S -> P ('+' P)*
+///     P -> T ('*' T)*
+///     T -> '(' S ')' | NUM
+///
 enum ShallowMathNTS: NonTerminalSymbolType {
 
     typealias SourceSymbol = MathTS
@@ -47,7 +59,7 @@ enum ShallowMathNTS: NonTerminalSymbolType {
 
     static var startSymbol: ShallowMathNTS { return .S }
 
-    func parse<Parser: ParserType where Parser.NTS == ShallowMathNTS>(p: Parser) -> Bool {
+    func parse<Parser: ParserType where Parser.NonTerminalSymbol == ShallowMathNTS>(p: Parser) -> Bool {
         return p.parse(self) {
             switch self {
                 case S:
@@ -67,10 +79,9 @@ let src = "(1 + 2 + 3 * 4 * 5) * 6 + 7x"
 let lexer = Lexer<MathTS>(src: src)
 let tss = lexer.filter { $0.sym != .Space }
 //print(tss)
-//let p = Parser(DeepMathNTS.self, src: tss)
-let p = Parser(ShallowMathNTS.self, src: tss)
-p.parse()
-//print(p.tree?.treeDescription(includePath: false) ?? "Invalid input")
+let p = Parser(DeepMathNTS.self, src: tss)
+//let p = Parser(ShallowMathNTS.self, src: tss)
+p.parse(.startSymbol)
 print(p.tree?.treeDescription(includePath: false, description: { node in
     var s = "\(node.value.sym)"
     if node.children.count == 0 {
