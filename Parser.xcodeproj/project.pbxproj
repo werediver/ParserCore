@@ -11,6 +11,8 @@
 		8D620D9C1CAECDC800194EDC /* ParserType.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE37CE6F1C78E22800A5A01D /* ParserType.swift */; };
 		8D620D9D1CAECDE600194EDC /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFD1A981C540E5B00B642CD /* main.swift */; };
 		8D620D9E1CAECDEF00194EDC /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D620D941CAE805900194EDC /* Parser.swift */; };
+		8D620DB71CB6B00E00194EDC /* LICENSE.md in Sources */ = {isa = PBXBuildFile; fileRef = 8D620DB51CB6B00E00194EDC /* LICENSE.md */; };
+		8D620DB81CB6B00E00194EDC /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 8D620DB61CB6B00E00194EDC /* README.md */; };
 		8D6782D51C90879D006251CA /* ActionProducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D6782D41C90879D006251CA /* ActionProducer.swift */; };
 		8DD772891C994D72008C7143 /* Indexable+Ext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD772881C994D72008C7143 /* Indexable+Ext.swift */; };
 		8DDD99D81C92EA8C00074438 /* Tree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DDD99D71C92EA8C00074438 /* Tree.swift */; };
@@ -37,6 +39,8 @@
 /* Begin PBXFileReference section */
 		8D620D941CAE805900194EDC /* Parser.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
 		8D620D961CAEC01600194EDC /* Lexer+String.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Lexer+String.swift"; sourceTree = "<group>"; wrapsLines = 0; };
+		8D620DB51CB6B00E00194EDC /* LICENSE.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
+		8D620DB61CB6B00E00194EDC /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		8D6782D41C90879D006251CA /* ActionProducer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ActionProducer.swift; sourceTree = "<group>"; };
 		8DD772881C994D72008C7143 /* Indexable+Ext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Indexable+Ext.swift"; sourceTree = "<group>"; };
 		8DDD99D71C92EA8C00074438 /* Tree.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Tree.swift; sourceTree = "<group>"; };
@@ -107,6 +111,8 @@
 		CEFD1A8C1C540E5A00B642CD = {
 			isa = PBXGroup;
 			children = (
+				8D620DB51CB6B00E00194EDC /* LICENSE.md */,
+				8D620DB61CB6B00E00194EDC /* README.md */,
 				CEFD1A971C540E5A00B642CD /* Parser */,
 				CEFD1A961C540E5A00B642CD /* Products */,
 			);
@@ -192,11 +198,13 @@
 				8DD772891C994D72008C7143 /* Indexable+Ext.swift in Sources */,
 				CE4621371C5E8A77000DB3F6 /* TypeName.swift in Sources */,
 				8DDD99D81C92EA8C00074438 /* Tree.swift in Sources */,
+				8D620DB71CB6B00E00194EDC /* LICENSE.md in Sources */,
 				8D620D9E1CAECDEF00194EDC /* Parser.swift in Sources */,
 				CEFD1AA01C54100000B642CD /* RegEx.swift in Sources */,
 				8D620D9C1CAECDC800194EDC /* ParserType.swift in Sources */,
 				CE37CE741C78E3E600A5A01D /* Token.swift in Sources */,
 				8D620D971CAEC01600194EDC /* Lexer+String.swift in Sources */,
+				8D620DB81CB6B00E00194EDC /* README.md in Sources */,
 				CE4363D61C8ED6B100580A36 /* Lexer.swift in Sources */,
 				8D6782D51C90879D006251CA /* ActionProducer.swift in Sources */,
 			);
