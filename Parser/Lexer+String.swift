@@ -10,14 +10,14 @@ struct CaretPosition: CustomStringConvertible {
 }
 
 extension Lexer
-    where TerminalSymbol.Source == String.CharacterView
+    where TargetSymbol.Source == String.CharacterView
 {
 
     convenience init(src: String) {
         self.init(src: src.characters)
     }
 
-    func caretPosition(srcIndex: TerminalSymbol.Source.Index) -> CaretPosition {
+    func caretPosition(srcIndex: TargetSymbol.Source.Index) -> CaretPosition {
         let eols = (src.startIndex ..< srcIndex).flatMap { (src[$0] == "\n") ? $0 : nil }
         let (line, lineStartIndex) = eols.fullRange.flatMap({ (eols[$0] < srcIndex) ? ($0, eols[$0]) : nil }).last ?? (0, src.startIndex)
         let column = lineStartIndex.distanceTo(srcIndex)

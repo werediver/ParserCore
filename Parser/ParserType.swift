@@ -2,38 +2,41 @@ import Foundation
 
 protocol ParserType {
 
-    associatedtype NonTerminalSymbol: NonTerminalSymbolType
-    associatedtype Source: CollectionType // [NonTerminalSymbol.SourceSymbol]
-
-    associatedtype Token: TokenType // GenericToken<NonTerminalSymbol, Source.Index>
+    associatedtype TargetSymbol: NonTerminalSymbolType
+    associatedtype Token: TokenType // GenericToken<TargetSymbol, Source.Index>
     associatedtype Node: TreeNodeType // GenericTreeNode<Token>
+
+    associatedtype Source: CollectionType // [TargetSymbol.SourceSymbol]
 
     var src: Source { get }
     var tree: Node? { get }
 
-    init(_: NonTerminalSymbol.Type, src: Source)
+    init(_: TargetSymbol.Type, src: Source)
 
-    func enterSym(sym: NonTerminalSymbol)
+    func enterSym(sym: TargetSymbol)
     func leaveSym(match match: Bool)
 
     func enterGroup()
     func leaveGroup(match match: Bool)
 
-    func accept(sym: NonTerminalSymbol.SourceSymbol) -> Bool
+    func accept(sym: TargetSymbol.SourceSymbol) -> Bool
 
 }
 
 extension ParserType {
 
+    // TODO: Delete.
     func parse() -> Bool {
-        return parse(NonTerminalSymbol.startSymbol)
+        return parse(TargetSymbol.startSymbol)
     }
 
-    func parse(sym: NonTerminalSymbol) -> Bool {
+    // TODO: Delete.
+    func parse(sym: TargetSymbol) -> Bool {
         return sym.parse(self)
     }
 
-    func parse(sym: NonTerminalSymbol, @noescape body: () throws -> Bool) rethrows -> Bool {
+    // TODO: Delete?
+    func parse(sym: TargetSymbol, @noescape body: () throws -> Bool) rethrows -> Bool {
         enterSym(sym)
         let match = try body()
         leaveSym(match: match)
@@ -53,9 +56,9 @@ extension ParserType {
     }
 
     func parse(@noescape body: () throws -> Bool, times: Range<Int>) rethrows -> Bool {
-        var n = 0
         enterGroup()
-        while try n < times.endIndex && parse(body) {
+        var n = 0
+        while try n + 1 < times.endIndex && parse(body) {
             n += 1
         }
         let match = times.contains(n)
