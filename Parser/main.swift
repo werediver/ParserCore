@@ -29,7 +29,7 @@ enum DeepMathNTS: NonTerminalSymbolType {
 
     static var startSymbol: DeepMathNTS { return .S }
 
-    func parse<Parser: ParserType where Parser.NonTerminalSymbol == DeepMathNTS>(p: Parser) -> Bool {
+    func parse<Parser: ParserType where Parser.TargetSymbol == DeepMathNTS>(p: Parser) -> Bool {
         return p.parse(self) {
             switch self {
                 case S:
@@ -59,7 +59,7 @@ enum ShallowMathNTS: NonTerminalSymbolType {
 
     static var startSymbol: ShallowMathNTS { return .S }
 
-    func parse<Parser: ParserType where Parser.NonTerminalSymbol == ShallowMathNTS>(p: Parser) -> Bool {
+    func parse<Parser: ParserType where Parser.TargetSymbol == ShallowMathNTS>(p: Parser) -> Bool {
         return p.parse(self) {
             switch self {
                 case S:
@@ -75,17 +75,37 @@ enum ShallowMathNTS: NonTerminalSymbolType {
 
 }
 
-let src = "(1 + 2 + 3 * 4 * 5) * 6 + 7x"
-let lexer = Lexer<MathTS>(src: src)
-let tss = lexer.filter { $0.sym != .Space }
-//print(tss)
-let p = Parser(DeepMathNTS.self, src: tss)
-//let p = Parser(ShallowMathNTS.self, src: tss)
-p.parse(.startSymbol)
-print(p.tree?.treeDescription(includePath: false, description: { node in
-    var s = "\(node.value.sym)"
-    if node.children.count == 0 {
-        s += " (" + tss[node.value.range].map(lexer.tokenDescription).joinWithSeparator(" ") + ")"
+func main() -> Int32 {
+    let src = "(1 + 2 + 3 * 4 * 5) * 6 + 7"
+    let lexer = Lexer<MathTS>(src: src)
+    let lexerResults = lexer.map { $0 }
+
+    let errors = lexerResults.filter({ $0.error != nil })
+    if  errors.count > 0 {
+        print("Lexer reports errors:\n\(errors)")
+        return EXIT_FAILURE
     }
-    return s
-}) ?? "Invalid input")
+
+    let tks = lexerResults.flatMap { result in result.filter { tk in tk.sym != .Space } }
+    //print(tss)
+    let p = Parser(DeepMathNTS.self, src: tks)
+    //let p = Parser(ShallowMathNTS.self, src: tss)
+    p.parse(.startSymbol)
+
+    let desc = p.tree?.treeDescription(includePath: false, description: { node in
+        var s = "\(node.value.sym)"
+        if node.children.count == 0 {
+            s += " (" + tks[node.value.range].map(lexer.tokenDescription).joinWithSeparator(" ") + ")"
+        }
+        return s
+    })
+    if let desc = desc {
+        print(desc)
+        return EXIT_SUCCESS
+    } else {
+        print("Invalid input")
+        return EXIT_FAILURE
+    }
+}
+
+exit(main())

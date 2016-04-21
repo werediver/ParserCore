@@ -1,6 +1,6 @@
 import Foundation
 
-protocol Symbol {
+protocol Symbol: Equatable {
 
     var symbolName: String { get }
 
@@ -30,8 +30,8 @@ protocol NonTerminalSymbolType: Symbol {
 
     associatedtype SourceSymbol: TerminalSymbolType
 
-    static var startSymbol: Self { get }
+    func parse<Parser: ParserType where Parser.TargetSymbol == Self>(p: Parser) -> Bool
 
-    func parse<Parser: ParserType where Parser.NonTerminalSymbol == Self>(p: Parser) -> Bool
+    static var startSymbol: Self { get }
 
 }
