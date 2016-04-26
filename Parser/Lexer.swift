@@ -25,7 +25,7 @@ final class Lexer<TargetSymbol: TerminalSymbolType>: SequenceType {
             for sym in TargetSymbol.all {
                 let len = sym.match(rest)
                 if len > 0 {
-                    token = Token(sym: sym, start: offset, end: offset.advancedBy(len))
+                    token = Token(sym: sym, range: offset ..< offset.advancedBy(len))
                     break
                 }
             }

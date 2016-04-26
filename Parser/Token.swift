@@ -6,31 +6,16 @@ protocol TokenType: CustomDebugStringConvertible {
     associatedtype Index: ForwardIndexType
 
     var sym: Symbol { get }
+    var range: Range<Index> { get }
 
-    var start: Index { get }
-    var end: Index { get set }
-
-    var range: Range<Index> { get } // start ..< end
-
-    init(sym: Symbol, start: Index, end: Index)
-    init(sym: Symbol, start: Index) // convenience, end = start
+    init(sym: Symbol, range: Range<Index>)
 
 }
 
 extension TokenType {
 
-    var range: Range<Index> {
-        return start ..< end
-    }
-
-    init(sym: Symbol, start: Index) {
-        self.init(sym: sym, start: start, end: start)
-    }
-
-    // MARK: - CustomDebugStringConvertible
-
     var debugDescription: String {
-        return "<\(sym) \(start)..\(end)>"
+        return "[\(sym) \(range)]"
     }
 
 }
@@ -39,10 +24,8 @@ extension TokenType {
 
 struct GenericToken<Symbol, Index: ForwardIndexType>: TokenType {
 
-    let sym: Symbol
-
-    let start: Index
-    var   end: Index
+    var sym: Symbol
+    var range: Range<Index>
 
 }
 
@@ -50,10 +33,8 @@ struct TextToken<Symbol>: TokenType {
 
     typealias Index = String.Index
 
-    let sym: Symbol
-
-    let start: Index
-    var   end: Index
+    var sym: Symbol
+    var range: Range<Index>
 
 }
 
@@ -61,9 +42,7 @@ struct CommonToken<Symbol>: TokenType {
 
     typealias Index = Int
 
-    let sym: Symbol
-
-    let start: Index
-    var   end: Index
+    var sym: Symbol
+    var range: Range<Index>
 
 }

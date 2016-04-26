@@ -86,7 +86,7 @@ func main() -> Int32 {
         return EXIT_FAILURE
     }
 
-    let tks = lexerResults.flatMap { result in result.filter { tk in tk.sym != .Space } }
+    let tks = lexerResults.flatMap { $0.value } .filter { tk in tk.sym != .Space }
     //print(tss)
     let p = Parser(DeepMathNTS.self, src: tks)
     //let p = Parser(ShallowMathNTS.self, src: tss)
