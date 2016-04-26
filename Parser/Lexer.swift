@@ -20,10 +20,10 @@ final class Lexer<TargetSymbol: TerminalSymbolType>: SequenceType {
 
     private func findToken(offset: TargetSymbol.Source.Index) -> Token? {
         var token: Token?
-        let rest = src.suffixFrom(offset)
-        if  rest.count > 0 {
+        let tail = src.suffixFrom(offset)
+        if  tail.count > 0 {
             for sym in TargetSymbol.all {
-                let len = sym.match(rest)
+                let len = sym.match(tail)
                 if len > 0 {
                     token = Token(sym: sym, range: offset ..< offset.advancedBy(len))
                     break

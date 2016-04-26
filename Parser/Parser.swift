@@ -2,7 +2,7 @@ import Foundation
 
 class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
     where Source.Generator.Element: TokenType,
-          Source.Generator.Element.Symbol == NonTerminalSymbol.SourceSymbol,
+          Source.Generator.Element.SymbolType == NonTerminalSymbol.SourceSymbol,
           Source.Index == Int>: ParserType
 {
 

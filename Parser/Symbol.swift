@@ -1,22 +1,22 @@
 import Foundation
 
-protocol Symbol: Equatable {
+protocol SymbolType: Equatable {
 
     var symbolName: String { get }
 
 }
 
-extension Symbol {
+extension SymbolType {
 
     var symbolName: String { return "\(self)" }
 
 }
 
-func ==<S: Symbol>(lhs: S, rhs: S) -> Bool {
+func ==<S: SymbolType>(lhs: S, rhs: S) -> Bool {
     return lhs.symbolName == rhs.symbolName
 }
 
-protocol TerminalSymbolType: Symbol {
+protocol TerminalSymbolType: SymbolType {
 
     associatedtype Source: CollectionType
 
@@ -26,7 +26,7 @@ protocol TerminalSymbolType: Symbol {
 
 }
 
-protocol NonTerminalSymbolType: Symbol {
+protocol NonTerminalSymbolType: SymbolType {
 
     associatedtype SourceSymbol: TerminalSymbolType
 
