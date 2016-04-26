@@ -20,27 +20,12 @@ class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
         self.src = src
     }
 
-    func enterSym(sym: NonTerminalSymbol) {
+    func push(sym: NonTerminalSymbol) {
         let offset = stack.last?.value.range.endIndex ?? 0
         stack.append(Node(Token(sym: sym, range: offset ..< offset)))
     }
 
-    func leaveSym(match match: Bool) {
-        let node = stack.popLast()!
-        if match {
-            if stack.isEmpty {
-                if node.value.range.endIndex == src.endIndex {
-                    stack.append(node) // Keep the final result.
-                }
-            } else {
-                let parentNode = stack.last!
-                parentNode.value.range.endIndex = node.value.range.endIndex
-                parentNode.children.append(node)
-            }
-        }
-    }
-
-    func enterGroup() {
+    func push() {
         let restorePoint = stack.endIndex
         restorePoints.append(restorePoint)
 
@@ -48,19 +33,23 @@ class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
         stack.append(Node(continuationNode.value))
     }
 
-    func leaveGroup(match match: Bool) {
-        let restorePoint = restorePoints.popLast()!
+    func pop(match match: Bool) {
+        let node = stack.popLast()!
+        let head = stack.last
         if match {
-            assert(restorePoint.distanceTo(stack.endIndex) == 1)
-            let node = stack[restorePoint - 1]
-            let continuationNode = stack[restorePoint]
-            //assert(node.value == continuationNode.value) // Tokens are not generally `Equatable`.
-            assert(node.value.range.startIndex == continuationNode.value.range.startIndex)
-            node.value = continuationNode.value
-            node.children.appendContentsOf(continuationNode.children)
-            stack.removeLast()
-        } else {
-            stack.removeRange(restorePoint ..< stack.endIndex)
+            if let head = head {
+                if head.value.sym == node.value.sym
+                && head.value.range.startIndex == node.value.range.endIndex
+                {
+                    head.value = node.value
+                    head.children.appendContentsOf(node.children)
+                } else {
+                    head.value.range.endIndex = node.value.range.endIndex
+                    head.children.append(node)
+                }
+            } else if node.value.range.endIndex == src.endIndex {
+                stack.append(node) // Keep the final result.
+            }
         }
     }
 
