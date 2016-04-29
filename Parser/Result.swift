@@ -32,19 +32,4 @@ enum Result<V, E: ErrorType>: CustomDebugStringConvertible {
         }
     }
 
-    @warn_unused_result
-    func map<U>(@noescape f: (V) throws -> U) rethrows -> U? {
-        return try value.map(f)
-    }
-
-    @warn_unused_result
-    func flatMap<U>(@noescape f: (V) throws -> U?) rethrows -> U? {
-        return try value.flatMap(f)
-    }
-
-    @warn_unused_result
-    func filter(@noescape predicate: (V) throws -> Bool) rethrows -> V? {
-        return try value.map(predicate).flatMap { $0 ? value : nil }
-    }
-
 }

@@ -13,21 +13,19 @@ final class Lexer<TargetSymbol: TerminalSymbolType>: SequenceType {
     typealias Generator = AnyGenerator<Element>
 
     let src: TargetSymbol.Source
-    var tolerateUnknownTokens: Bool
 
-    init(src: TargetSymbol.Source, tolerateUnknownTokens: Bool = false) {
+    init(src: TargetSymbol.Source) {
         self.src = src
-        self.tolerateUnknownTokens = tolerateUnknownTokens
     }
 
     private func findToken(offset: TargetSymbol.Source.Index) -> Token? {
         var token: Token?
-        let rest = src.suffixFrom(offset)
-        if  rest.count > 0 {
+        let tail = src.suffixFrom(offset)
+        if  tail.count > 0 {
             for sym in TargetSymbol.all {
-                let len = sym.match(rest)
+                let len = sym.match(tail)
                 if len > 0 {
-                    token = Token(sym: sym, start: offset, end: offset.advancedBy(len))
+                    token = Token(sym: sym, range: offset ..< offset.advancedBy(len))
                     break
                 }
             }
@@ -41,7 +39,7 @@ final class Lexer<TargetSymbol: TerminalSymbolType>: SequenceType {
                 return .Value(token)
             } else {
                 let unknownTokenStart = offset
-                var unknownTokenEnd = tolerateUnknownTokens ? offset.advancedBy(1) : src.endIndex
+                var unknownTokenEnd = offset.advancedBy(1)
                 while src.fullRange.contains(unknownTokenEnd)
                    && findToken(unknownTokenEnd) == nil
                 {

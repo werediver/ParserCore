@@ -2,7 +2,7 @@ import Foundation
 
 class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
     where Source.Generator.Element: TokenType,
-          Source.Generator.Element.Symbol == NonTerminalSymbol.SourceSymbol,
+          Source.Generator.Element.SymbolType == NonTerminalSymbol.SourceSymbol,
           Source.Index == Int>: ParserType
 {
 
@@ -20,27 +20,12 @@ class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
         self.src = src
     }
 
-    func enterSym(sym: NonTerminalSymbol) {
-        let offset = stack.last?.value.end ?? 0
-        stack.append(Node(Token(sym: sym, start: offset)))
+    func enter(sym: NonTerminalSymbol) {
+        let offset = stack.last?.value.range.endIndex ?? 0
+        stack.append(Node(Token(sym: sym, range: offset ..< offset)))
     }
 
-    func leaveSym(match match: Bool) {
-        let node = stack.popLast()!
-        if match {
-            if stack.isEmpty {
-                if node.value.end == src.endIndex {
-                    stack.append(node) // Keep the final result.
-                }
-            } else {
-                let parentNode = stack.last!
-                parentNode.value.end = node.value.end
-                parentNode.children.append(node)
-            }
-        }
-    }
-
-    func enterGroup() {
+    func enter() {
         let restorePoint = stack.endIndex
         restorePoints.append(restorePoint)
 
@@ -48,27 +33,31 @@ class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
         stack.append(Node(continuationNode.value))
     }
 
-    func leaveGroup(match match: Bool) {
-        let restorePoint = restorePoints.popLast()!
+    func leave(match match: Bool) {
+        let node = stack.popLast()!
+        let head = stack.last
         if match {
-            assert(restorePoint.distanceTo(stack.endIndex) == 1)
-            let node = stack[restorePoint - 1]
-            let continuationNode = stack[restorePoint]
-            //assert(node.value == continuationNode.value) // Tokens are not generally `Equatable`.
-            assert(node.value.start == continuationNode.value.start)
-            node.value = continuationNode.value
-            node.children.appendContentsOf(continuationNode.children)
-            stack.removeLast()
-        } else {
-            stack.removeRange(restorePoint ..< stack.endIndex)
+            if let head = head {
+                if head.value.sym == node.value.sym
+                && head.value.range.startIndex == node.value.range.endIndex
+                {
+                    head.value = node.value
+                    head.children.appendContentsOf(node.children)
+                } else {
+                    head.value.range.endIndex = node.value.range.endIndex
+                    head.children.append(node)
+                }
+            } else if node.value.range.endIndex == src.endIndex {
+                stack.append(node) // Keep the final result.
+            }
         }
     }
 
     func accept(sym: NonTerminalSymbol.SourceSymbol) -> Bool {
         let node = stack.last!
         let match: Bool
-        if node.value.end < src.count && src[node.value.end].sym == sym {
-            node.value.end += 1
+        if node.value.range.endIndex < src.count && src[node.value.range.endIndex].sym == sym {
+            node.value.range.endIndex += 1
             match = true
         } else {
             match = false

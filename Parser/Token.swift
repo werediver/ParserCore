@@ -2,68 +2,47 @@ import Foundation
 
 protocol TokenType: CustomDebugStringConvertible {
 
-    associatedtype Symbol
+    associatedtype SymbolType
     associatedtype Index: ForwardIndexType
 
-    var sym: Symbol { get }
+    var sym: SymbolType { get }
+    var range: Range<Index> { get }
 
-    var start: Index { get }
-    var end: Index { get set }
-
-    var range: Range<Index> { get } // start ..< end
-
-    init(sym: Symbol, start: Index, end: Index)
-    init(sym: Symbol, start: Index) // convenience, end = start
+    init(sym: SymbolType, range: Range<Index>)
 
 }
 
 extension TokenType {
 
-    var range: Range<Index> {
-        return start ..< end
-    }
-
-    init(sym: Symbol, start: Index) {
-        self.init(sym: sym, start: start, end: start)
-    }
-
-    // MARK: - CustomDebugStringConvertible
-
     var debugDescription: String {
-        return "<\(sym) \(start)..\(end)>"
+        return "[\(sym) \(range)]"
     }
 
 }
 
 // MARK: - Common token implementations
 
-struct GenericToken<Symbol, Index: ForwardIndexType>: TokenType {
+struct GenericToken<SymbolType, Index: ForwardIndexType>: TokenType {
 
-    let sym: Symbol
-
-    let start: Index
-    var   end: Index
+    var sym: SymbolType
+    var range: Range<Index>
 
 }
 
-struct TextToken<Symbol>: TokenType {
+struct TextToken<SymbolType>: TokenType {
 
     typealias Index = String.Index
 
-    let sym: Symbol
-
-    let start: Index
-    var   end: Index
+    var sym: SymbolType
+    var range: Range<Index>
 
 }
 
-struct CommonToken<Symbol>: TokenType {
+struct CommonToken<SymbolType>: TokenType {
 
     typealias Index = Int
 
-    let sym: Symbol
-
-    let start: Index
-    var   end: Index
+    var sym: SymbolType
+    var range: Range<Index>
 
 }
