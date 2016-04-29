@@ -2,13 +2,13 @@ import Foundation
 
 protocol TokenType: CustomDebugStringConvertible {
 
-    associatedtype SymbolType
+    associatedtype Symbol
     associatedtype Index: ForwardIndexType
 
-    var sym: SymbolType { get }
+    var sym: Symbol { get }
     var range: Range<Index> { get }
 
-    init(sym: SymbolType, range: Range<Index>)
+    init(sym: Symbol, range: Range<Index>)
 
 }
 
@@ -22,27 +22,27 @@ extension TokenType {
 
 // MARK: - Common token implementations
 
-struct GenericToken<SymbolType, Index: ForwardIndexType>: TokenType {
+struct GenericToken<Symbol, Index: ForwardIndexType>: TokenType {
 
-    var sym: SymbolType
+    var sym: Symbol
     var range: Range<Index>
 
 }
 
-struct TextToken<SymbolType>: TokenType {
+struct TextToken<Symbol>: TokenType {
 
     typealias Index = String.Index
 
-    var sym: SymbolType
+    var sym: Symbol
     var range: Range<Index>
 
 }
 
-struct CommonToken<SymbolType>: TokenType {
+struct CommonToken<Symbol>: TokenType {
 
     typealias Index = Int
 
-    var sym: SymbolType
+    var sym: Symbol
     var range: Range<Index>
 
 }
