@@ -20,12 +20,12 @@ class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
         self.src = src
     }
 
-    func push(sym: NonTerminalSymbol) {
+    func enter(sym: NonTerminalSymbol) {
         let offset = stack.last?.value.range.endIndex ?? 0
         stack.append(Node(Token(sym: sym, range: offset ..< offset)))
     }
 
-    func push() {
+    func enter() {
         let restorePoint = stack.endIndex
         restorePoints.append(restorePoint)
 
@@ -33,7 +33,7 @@ class Parser<NonTerminalSymbol: NonTerminalSymbolType, Source: CollectionType
         stack.append(Node(continuationNode.value))
     }
 
-    func pop(match match: Bool) {
+    func leave(match match: Bool) {
         let node = stack.popLast()!
         let head = stack.last
         if match {

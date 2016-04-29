@@ -13,9 +13,9 @@ protocol ParserType {
 
     init(_: TargetSymbol.Type, src: Source)
 
-    func push(sym: TargetSymbol)
-    func push()
-    func pop(match match: Bool)
+    func enter(sym: TargetSymbol)
+    func enter()
+    func leave(match match: Bool)
 
     func accept(sym: TargetSymbol.SourceSymbol) -> Bool
 
@@ -35,16 +35,16 @@ extension ParserType {
 
     // TODO: Delete?
     func parse(sym: TargetSymbol, @noescape body: () throws -> Bool) rethrows -> Bool {
-        push(sym)
+        enter(sym)
         let match = try body()
-        pop(match: match)
+        leave(match: match)
         return match
     }
 
     func parse(@noescape body: () throws -> Bool) rethrows -> Bool {
-        push()
+        enter()
         let match = try body()
-        pop(match: match)
+        leave(match: match)
         return match
     }
 
@@ -54,13 +54,13 @@ extension ParserType {
     }
 
     func parse(@noescape body: () throws -> Bool, times: Range<Int>) rethrows -> Bool {
-        push()
+        enter()
         var n = 0
         while try n + 1 < times.endIndex && parse(body) {
             n += 1
         }
         let match = times.contains(n)
-        pop(match: match)
+        leave(match: match)
         return match
     }
 
