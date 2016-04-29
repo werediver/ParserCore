@@ -50,7 +50,7 @@ struct RegEx {
                let range = s.range(match.range)
             {
                 s.replaceRange(range, with: template)
-                n = n + 1
+                n += 1
             }
             return false
         }

@@ -25,7 +25,7 @@ extension Lexer
     }
 
     func tokenDescription(token: Token) -> String {
-        let pos = caretPosition(token.start)
+        let pos = caretPosition(token.range.startIndex)
         return "<\(token.sym) \(pos) \"\(String(src[token.range]))\">"
     }
 
