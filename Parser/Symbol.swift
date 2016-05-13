@@ -20,7 +20,7 @@ protocol TerminalSymbolType: SymbolType {
 
     associatedtype Source: CollectionType
 
-    func match(src: Source.SubSequence) -> Source.Index.Distance
+    func match(tail: Source.SubSequence) -> Source.Index.Distance
 
     static var all: [Self] { get }
 
