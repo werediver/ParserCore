@@ -9,7 +9,7 @@ struct CaretPosition: CustomStringConvertible {
 
 }
 
-extension Lexer
+extension LexAnalyser
     where TargetSymbol.Source == String.CharacterView
 {
 
@@ -17,11 +17,12 @@ extension Lexer
         self.init(src: src.characters)
     }
 
-    func caretPosition(srcIndex: TargetSymbol.Source.Index) -> CaretPosition {
-        let eols = (src.startIndex ..< srcIndex).flatMap { (src[$0] == "\n") ? $0 : nil }
-        let (line, lineStartIndex) = eols.fullRange.flatMap({ (eols[$0] < srcIndex) ? ($0, eols[$0]) : nil }).last ?? (0, src.startIndex)
-        let column = lineStartIndex.distanceTo(srcIndex)
-        return CaretPosition(line: line, column: column)
+    func caretPosition(offset: String.Index) -> CaretPosition {
+        let eols = (src.startIndex ..< offset).flatMap { (src[$0] == "\n") ? $0 : nil }
+        let line = eols.count
+        let lineStartIndex = eols.last?.advancedBy(1) ?? src.startIndex
+        let column = lineStartIndex.distanceTo(offset)
+        return CaretPosition(line: line + 1, column: column + 1)
     }
 
     func tokenDescription(token: Token) -> String {
@@ -36,8 +37,8 @@ extension TerminalSymbolType
           Self: RawRepresentable, Self.RawValue == RegEx
 {
 
-    func match(src: Source.SubSequence) -> Source.Index.Distance {
-        return rawValue.rangeOfFirstMatchInString(String(src), options: .Anchored)?.count ?? 0
+    func match(tail: Source.SubSequence) -> Source.Index.Distance {
+        return rawValue.rangeOfFirstMatchInString(String(tail), options: .Anchored)?.count ?? 0
     }
 
 }
