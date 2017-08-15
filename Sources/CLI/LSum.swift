@@ -63,7 +63,7 @@ enum LSumParser<Core: ParserCoreProtocol> where
 
     static func num() -> Parser<Num> {
         return Core.string(charset: digits)
-            .flatMap(tag: "Num") { text in
+            .attemptMap(tag: "Num") { text in
                 Int(text)
                     .map(Num.init)
                     .map(Result.success)

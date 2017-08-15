@@ -6,6 +6,7 @@ public protocol TerminalMatchProtocol {
     var length: Int { get }
 }
 
+// TODO: Consider renaming to `Match`.
 public struct TerminalMatch<Symbol>: TerminalMatchProtocol {
 
     public let symbol: Symbol

@@ -10,23 +10,25 @@ public protocol ResultProtocol {
 
 public extension ResultProtocol {
 
-    public var value: Value? {
+    var value: Value? {
         return iif(success: { $0 }, failure: { _ in nil })
     }
 
-    public var error: Error? {
+    var error: Error? {
         return iif(success: { _ in nil }, failure: { $0 })
     }
 
     func map<T>(_ transform: (Value) throws -> T) rethrows -> Result<T, Error> {
-        return try iif(success: { try .success(transform($0)) }, failure: { .failure($0) })
+        return try iif(success: { try .success(transform($0)) }, failure: Result.failure)
     }
 
     func flatMap<T>(_ transform: (Value) throws -> Result<T, Error>) rethrows -> Result<T, Error> {
-        return try iif(success: transform, failure: { .failure($0) })
+        return try iif(success: transform, failure: Result.failure)
     }
 
-    // TODO: Add `flatMapError` op.
+    func mapError<T>(_ transform: (Error) throws -> T) rethrows -> Result<Value, T> {
+        return try iif(success: Result.success, failure: { try .failure(transform($0)) })
+    }
 
     static func `try`(_ body: () throws -> Value) -> Result<Value, Swift.Error> {
         do {

@@ -4,7 +4,7 @@ public protocol ParserCoreProtocol {
 
     func accept<Symbol>(_ body: (Source.SubSequence) -> TerminalMatch<Symbol>?) -> Symbol?
 
-    func parse<Parser: ParserProtocol>(_ parser: Parser) -> Parser.Output where Parser.Core == Self
+    func parse<P: ParserProtocol>(_ parser: P) -> P.Link where P.Core == Self
 }
 
 public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol where
@@ -15,7 +15,6 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
 
     private let source: Source
     private var position: Source.Index
-    private var tail: Source.SubSequence { return source.suffix(from: position) }
 
     private func offset(_ index: Source.Index) -> Source.IndexDistance {
         return source.distance(from: source.startIndex, to: index)
@@ -27,6 +26,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
     }
 
     public func accept<Symbol>(_ body: (Source.SubSequence) -> TerminalMatch<Symbol>?) -> Symbol? {
+        let tail = source.suffix(from: position)
         if let match = body(tail) {
             source.formIndex(&position, offsetBy: match.length)
             return match.symbol
@@ -34,23 +34,27 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
         return nil
     }
 
-    public func parse<Parser: ParserProtocol>(_ parser: Parser) -> Parser.Output where Parser.Core == GenericParserCore {
+    public func parse<P: ParserProtocol>(_ parser: P) -> P.Link where
+        P.Core == GenericParserCore
+    {
         let startPosition = position
         let key = parser.tag.map { Key(offset: offset(position), tag: $0) }
-        let result = wrap(key: key) { () -> Result<TerminalMatch<Parser.Symbol>, Mismatch> in
+        let result = wrap(key: key) { () -> Result<TerminalMatch<P.Symbol>, Mismatch> in
             stack.append((startPosition, parser.tag))
             defer { stack.removeLast() }
             //if let _ = parser.tag { print(trace) }
-            return parser.parse(self)
-                .map { match in
-                    TerminalMatch(symbol: match.symbol, length: source.distance(from: startPosition, to: position))
+            return parser.parse(self).result
+                .map { symbol in
+                    TerminalMatch(symbol: symbol, length: source.distance(from: startPosition, to: position))
                 }
         }
 
+        //if case let .failure(error) = result {
         if case .failure = result {
             position = startPosition
+            //print("\(offset(position)): \(error)")
         }
-        return result.map { match in (match.symbol, self) }
+        return (result.map { match in match.symbol }, self)
     }
 
     // TODO: Consider "compressing" the stack in case of left recursion (add `depth: Int` field).
