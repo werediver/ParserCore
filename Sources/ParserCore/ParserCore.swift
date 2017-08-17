@@ -1,10 +1,10 @@
-public protocol ParserCoreProtocol {
+public protocol ParserCoreProtocol: class {
 
     associatedtype Source: Collection where Source.SubSequence: Collection
 
     func accept<Symbol>(_ body: (Source.SubSequence) -> TerminalMatch<Symbol>?) -> Symbol?
 
-    func parse<P: ParserProtocol>(_ parser: P) -> P.Link where P.Core == Self
+    func parse<P: ParserProtocol>(_ parser: P) -> P.Output where P.Core == Self
 }
 
 public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol where
@@ -34,7 +34,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
         return nil
     }
 
-    public func parse<P: ParserProtocol>(_ parser: P) -> P.Link where
+    public func parse<P: ParserProtocol>(_ parser: P) -> P.Output where
         P.Core == GenericParserCore
     {
         let startPosition = position
@@ -43,7 +43,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             stack.append((startPosition, parser.tag))
             defer { stack.removeLast() }
             //if let _ = parser.tag { print(trace) }
-            return parser.parse(self).result
+            return parser.parse(self)
                 .map { symbol in
                     TerminalMatch(symbol: symbol, length: source.distance(from: startPosition, to: position))
                 }
@@ -54,7 +54,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             position = startPosition
             //print("\(offset(position)): \(error)")
         }
-        return (result.map { match in match.symbol }, self)
+        return result.map { match in match.symbol }
     }
 
     // TODO: Consider "compressing" the stack in case of left recursion (add `depth: Int` field).

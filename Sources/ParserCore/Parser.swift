@@ -15,29 +15,26 @@ public protocol ParserProtocol {
 
     associatedtype Core: ParserCoreProtocol
     associatedtype Symbol
-
-    typealias Link = (result: Result<Symbol, Mismatch>, core: Core)
+    typealias Output = Result<Symbol, Mismatch>
 
     var tag: String? { get }
 
-    func parse(_ core: Core) -> Link
+    func parse(_ core: Core) -> Output
 }
 
 public extension ParserProtocol {
 
     func map<T>(tag: String? = nil, _ transform: @escaping (Symbol) -> T) -> GenericParser<Core, T> {
         return GenericParser(tag: tag) { _, core in
-            let link1 = core.parse(self)
-            let link2 = (link1.result.map(transform), link1.core)
-            return link2
+            core.parse(self)
+                .map(transform)
         }
     }
 
     func attemptMap<T>(tag: String? = nil, _ transform: @escaping (Symbol) -> Result<T, Mismatch>) -> GenericParser<Core, T> {
         return GenericParser(tag: tag) { _, core in
-            let link1 = core.parse(self)
-            let link2 = (link1.result.flatMap(transform), link1.core)
-            return link2
+            core.parse(self)
+                .flatMap(transform)
         }
     }
 
@@ -45,20 +42,18 @@ public extension ParserProtocol {
         P.Core == Core
     {
         return GenericParser(tag: tag) { _, core in
-            let link1 = core.parse(self)
-            let link2 = link1.result.iif(
-                success: { symbol in link1.core.parse(transform(symbol)) },
-                failure: { error in (.failure(error), link1.core) }
-            )
-            return link2
+            core.parse(self)
+                .iif(
+                    success: { symbol in core.parse(transform(symbol)) },
+                    failure: Result.failure
+                )
         }
     }
 
     func mapError(tag: String? = nil, _ transform: @escaping (Mismatch) -> Mismatch) -> GenericParser<Core, Symbol> {
         return GenericParser(tag: tag) { _, core in
-            let link1 = core.parse(self)
-            let link2 = (link1.result.mapError(transform), link1.core)
-            return link2
+            core.parse(self)
+                .mapError(transform)
         }
     }
 }
@@ -70,16 +65,16 @@ public struct GenericParser<_Core: ParserCoreProtocol, _Symbol>: ParserProtocol 
 
     public let tag: String?
 
-    public func parse(_ core: Core) -> Link {
+    public func parse(_ core: Core) -> Output {
         return body(self, core)
     }
 
-    public init(tag: String? = nil, _ body: @escaping (_ this: GenericParser, Core) -> Link) {
+    public init(tag: String? = nil, _ body: @escaping (_ this: GenericParser, Core) -> Output) {
         self.tag = tag
         self.body = body
     }
 
-    private let body: (_ this: GenericParser, Core) -> Link
+    private let body: (_ this: GenericParser, Core) -> Output
 }
 
 public extension GenericParser {

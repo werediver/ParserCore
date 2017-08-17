@@ -6,8 +6,8 @@ public extension ParserCoreProtocol {
         Parser.Core == Self
     {
         return GenericParser(tag: tag) { _, core in
-            let link1 = core.parse(parser)
-            return (.success(), link1.core)
+            _ = core.parse(parser)
+            return .success()
         }
     }
 
@@ -20,15 +20,14 @@ public extension ParserCoreProtocol {
     static func oneOf<Parser: ParserProtocol>(tag: String? = nil, _ parsers: [Parser]) -> GenericParser<Self, Parser.Symbol> where
         Parser.Core == Self
     {
-        // TODO: Reuse each returned core, don't discard them!
         return GenericParser(tag: tag) { _, core in
             for parser in parsers {
-                let link = core.parse(parser)
-                if case .success = link.result  {
-                    return link
+                let result = core.parse(parser)
+                if case .success = result  {
+                    return result
                 }
             }
-            return (.failure(Mismatch(message: "One of \(tag.unwrappedDescription) is expected")), core)
+            return .failure(Mismatch(message: "One of \(tag.unwrappedDescription) is expected"))
         }
     }
 }
@@ -40,8 +39,8 @@ public extension ParserCoreProtocol {
             core.accept { tail -> TerminalMatch<()>? in
                     return tail.count == 0 ? TerminalMatch(symbol: (), length: 0) : nil
                 }
-                .map { symbol in (.success(symbol), core) }
-            ??  (.failure(Mismatch(message: "End of input is expected")), core)
+                .map(Result.success)
+            ??  .failure(Mismatch(message: "End of input is expected"))
         }
     }
 
@@ -58,8 +57,8 @@ public extension ParserCoreProtocol {
                         return nil
                     }
                 }
-                .map { symbol in (.success(symbol), core) }
-            ??  (.failure(Mismatch()), core)
+                .map(Result.success)
+            ??  .failure(Mismatch())
         }
     }
 }
@@ -75,8 +74,8 @@ public extension ParserCoreProtocol where
             core.accept { tail -> TerminalMatch<Source.SubSequence>? in
                     tail.starts(with: pattern) ? TerminalMatch(symbol: pattern, length: pattern.count) : nil
                 }
-                .map { symbol in (.success(symbol), core) }
-            ??  (.failure(Mismatch()), core)
+                .map(Result.success)
+            ??  .failure(Mismatch())
         }
     }
 }
