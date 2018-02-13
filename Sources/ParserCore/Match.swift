@@ -39,29 +39,29 @@ struct AnyMatch: MatchRepresenting {
     private let symbolType: Any.Type
 }
 
-struct AnyMatchResult: ResultRepresenting {
+struct AnyMatchResult: EitherRepresenting {
 
-    typealias Value = AnyMatch
-    typealias Error = Mismatch
+    typealias Right = AnyMatch
+    typealias Left = Mismatch
 
-    func iif<T>(success: (Value) throws -> T, failure: (Error) throws -> T) rethrows -> T {
-        return try result.iif(success: success, failure: failure)
+    func iif<T>(right: (Right) throws -> T, left: (Left) throws -> T) rethrows -> T {
+        return try result.iif(right: right, left: left)
     }
 
-    func cast<Symbol>() -> Result<Match<Symbol>, Mismatch>? {
+    func cast<Symbol>() -> Either<Mismatch, Match<Symbol>>? {
         return Optional(condition: Symbol.self == symbolType).flatMap {
-            result.iif(success: { $0.cast().map(Result.success) }, failure: Result.failure)
+            result.iif(right: { $0.cast().map(Either.right) }, left: Either.left)
         }
     }
 
-    init<Result: ResultRepresenting>(_ result: Result) where
-        Result.Value: MatchRepresenting,
-        Result.Error == Mismatch
+    init<Result: EitherRepresenting>(_ result: Result) where
+        Result.Right: MatchRepresenting,
+        Result.Left == Mismatch
     {
         self.result = result.map { AnyMatch($0) }
-        self.symbolType = Result.Value.Symbol.self
+        self.symbolType = Result.Right.Symbol.self
     }
 
-    private let result: Result<AnyMatch, Mismatch>
+    private let result: Either<Mismatch, AnyMatch>
     private let symbolType: Any.Type
 }

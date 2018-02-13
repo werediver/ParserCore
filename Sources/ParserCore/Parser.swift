@@ -15,11 +15,11 @@ public protocol ParserProtocol {
 
     associatedtype Core: ParserCoreProtocol
     associatedtype Symbol
-    typealias Output = Result<Symbol, Mismatch>
+    typealias Result = Either<Mismatch, Symbol>
 
     var tag: String? { get }
 
-    func parse(_ core: Core) -> Output
+    func parse(_ core: Core) -> Result
 }
 
 public extension ParserProtocol {
@@ -31,7 +31,7 @@ public extension ParserProtocol {
         }
     }
 
-    func attemptMap<T>(tag: String? = nil, _ transform: @escaping (Symbol) -> Result<T, Mismatch>) -> GenericParser<Core, T> {
+    func attemptMap<T>(tag: String? = nil, _ transform: @escaping (Symbol) -> Either<Mismatch, T>) -> GenericParser<Core, T> {
         return GenericParser(tag: tag) { _, core in
             core.parse(self)
                 .flatMap(transform)
@@ -44,8 +44,8 @@ public extension ParserProtocol {
         return GenericParser(tag: tag) { _, core in
             core.parse(self)
                 .iif(
-                    success: { symbol in core.parse(transform(symbol)) },
-                    failure: Result.failure
+                    right: { symbol in core.parse(transform(symbol)) },
+                    left: Either.left
                 )
         }
     }
@@ -65,16 +65,16 @@ public struct GenericParser<_Core: ParserCoreProtocol, _Symbol>: ParserProtocol 
 
     public let tag: String?
 
-    public func parse(_ core: Core) -> Output {
+    public func parse(_ core: Core) -> Result {
         return body(self, core)
     }
 
-    public init(tag: String? = nil, _ body: @escaping (_ this: GenericParser, Core) -> Output) {
+    public init(tag: String? = nil, _ body: @escaping (_ this: GenericParser, Core) -> Result) {
         self.tag = tag
         self.body = body
     }
 
-    private let body: (_ this: GenericParser, Core) -> Output
+    private let body: (_ this: GenericParser, Core) -> Result
 }
 
 public extension GenericParser {

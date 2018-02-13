@@ -66,8 +66,8 @@ enum LSumParser<Core: ParserCoreProtocol> where
             .attemptMap(tag: "Num") { text in
                 Int(text)
                     .map(Num.init)
-                    .map(Result.success)
-                ??  .failure(Mismatch(message: "Invalid integer number: \"\(text)\""))
+                    .map(Either.right)
+                ??  .left(Mismatch(message: "Invalid integer number: \"\(text)\""))
             }
     }
 

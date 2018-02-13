@@ -4,7 +4,7 @@ public protocol ParserCoreProtocol: class {
 
     func accept<Symbol>(_ body: (Source.SubSequence) -> Match<Symbol>?) -> Symbol?
 
-    func parse<P: ParserProtocol>(_ parser: P) -> P.Output where P.Core == Self
+    func parse<P: ParserProtocol>(_ parser: P) -> P.Result where P.Core == Self
 }
 
 public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol where
@@ -34,12 +34,12 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
         return nil
     }
 
-    public func parse<P: ParserProtocol>(_ parser: P) -> P.Output where
+    public func parse<P: ParserProtocol>(_ parser: P) -> P.Result where
         P.Core == GenericParserCore
     {
         let startPosition = position
         let key = parser.tag.map { Key(offset: offset(position), tag: $0) }
-        let result = wrap(key: key) { () -> Result<Match<P.Symbol>, Mismatch> in
+        let result = wrap(key: key) { () -> Either<Mismatch, Match<P.Symbol>> in
             stack.append((startPosition, parser.tag))
             defer { stack.removeLast() }
             //if let _ = parser.tag { print(trace) }
@@ -49,8 +49,8 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
                 }
         }
 
-        //if case let .failure(error) = result {
-        if case .failure = result {
+        //if case let .left(error) = result {
+        if case .left = result {
             position = startPosition
             //print("\(offset(position)): \(error)")
         }
@@ -66,15 +66,15 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             .joined(separator: " ")
     }
 
-    private func wrap<Key: Hashable, Symbol>(key: Key?, _ f: () -> Result<Match<Symbol>, Mismatch>) -> Result<Match<Symbol>, Mismatch> {
+    private func wrap<Key: Hashable, Symbol>(key: Key?, _ f: () -> Either<Mismatch, Match<Symbol>>) -> Either<Mismatch, Match<Symbol>> {
         return depthLimiter.limitDepth(key: key, limit: source.count - offset(position), {
                     memoizer.memoize(key: key, context: self, {
                             AnyMatchResult(f())
                         })
                         .cast()
-                    ??  .failure(Mismatch(message: trace + " Type cast error"))
+                    ??  .left(Mismatch(message: trace + " Type cast error"))
                 })
-            ??  .failure(Mismatch(message: trace + " Depth cut-off"))
+            ??  .left(Mismatch(message: trace + " Depth cut-off"))
     }
 
     private var memoizer = Memoizer<GenericParserCore, AnyMatchResult>(

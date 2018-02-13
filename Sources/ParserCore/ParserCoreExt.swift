@@ -7,7 +7,7 @@ public extension ParserCoreProtocol {
     {
         return GenericParser(tag: tag) { _, core in
             _ = core.parse(parser)
-            return .success(Void())
+            return .right(Void())
         }
     }
 
@@ -23,11 +23,11 @@ public extension ParserCoreProtocol {
         return GenericParser(tag: tag) { _, core in
             for parser in parsers {
                 let result = core.parse(parser)
-                if case .success = result  {
+                if case .right = result  {
                     return result
                 }
             }
-            return .failure(Mismatch(message: "One of \(tag.unwrappedDescription) is expected"))
+            return .left(Mismatch(message: "One of \(tag.unwrappedDescription) is expected"))
         }
     }
 }
@@ -39,8 +39,8 @@ public extension ParserCoreProtocol {
             core.accept { tail -> Match<()>? in
                     return tail.count == 0 ? Match(symbol: (), length: 0) : nil
                 }
-                .map(Result.success)
-            ??  .failure(Mismatch(message: "End of input is expected"))
+                .map(Either.right)
+            ??  .left(Mismatch(message: "End of input is expected"))
         }
     }
 
@@ -57,8 +57,8 @@ public extension ParserCoreProtocol {
                         return nil
                     }
                 }
-                .map(Result.success)
-            ??  .failure(Mismatch())
+                .map(Either.right)
+            ??  .left(Mismatch())
         }
     }
 }
@@ -74,8 +74,8 @@ public extension ParserCoreProtocol where
             core.accept { tail -> Match<Source.SubSequence>? in
                     tail.starts(with: pattern) ? Match(symbol: pattern, length: pattern.count) : nil
                 }
-                .map(Result.success)
-            ??  .failure(Mismatch())
+                .map(Either.right)
+            ??  .left(Mismatch())
         }
     }
 }
