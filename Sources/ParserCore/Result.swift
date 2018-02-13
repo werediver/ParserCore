@@ -1,6 +1,6 @@
 public enum NoError {}
 
-public protocol ResultProtocol {
+public protocol ResultRepresenting {
 
     associatedtype Value
     associatedtype Error
@@ -8,7 +8,7 @@ public protocol ResultProtocol {
     func iif<T>(success: (Value) throws -> T, failure: (Error) throws -> T) rethrows -> T
 }
 
-public extension ResultProtocol {
+public extension ResultRepresenting {
 
     var value: Value? {
         return iif(success: { $0 }, failure: { _ in nil })
@@ -39,7 +39,7 @@ public extension ResultProtocol {
     }
 }
 
-public enum Result<Value, Error>: ResultProtocol {
+public enum Result<Value, Error>: ResultRepresenting {
 
     case success(Value)
     case failure(Error)

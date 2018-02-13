@@ -1,14 +1,18 @@
-// swift-tools-version:3.1
+// swift-tools-version:4.0
 
 import PackageDescription
 
 let package = Package(
     name: "ParserCore",
+    products: [
+        .library(name: "ParserCore", targets: ["ParserCore"]),
+        .executable(name: "CLI", targets: ["CLI"])
+    ],
     targets: [
-        Target(
+        .target(
             name: "ParserCore"
         ),
-        Target(
+        .target(
             name: "CLI",
             dependencies: ["ParserCore"]
         )

@@ -8,7 +8,7 @@ public extension Optional {
 public extension Optional where Wrapped == () {
 
     init(condition: Bool) {
-        self = condition ? .some() : .none
+        self = condition ? .some(Void()) : .none
     }
 }
 

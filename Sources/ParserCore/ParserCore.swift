@@ -2,7 +2,7 @@ public protocol ParserCoreProtocol: class {
 
     associatedtype Source: Collection where Source.SubSequence: Collection
 
-    func accept<Symbol>(_ body: (Source.SubSequence) -> TerminalMatch<Symbol>?) -> Symbol?
+    func accept<Symbol>(_ body: (Source.SubSequence) -> Match<Symbol>?) -> Symbol?
 
     func parse<P: ParserProtocol>(_ parser: P) -> P.Output where P.Core == Self
 }
@@ -25,7 +25,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
         self.position = source.startIndex
     }
 
-    public func accept<Symbol>(_ body: (Source.SubSequence) -> TerminalMatch<Symbol>?) -> Symbol? {
+    public func accept<Symbol>(_ body: (Source.SubSequence) -> Match<Symbol>?) -> Symbol? {
         let tail = source.suffix(from: position)
         if let match = body(tail) {
             source.formIndex(&position, offsetBy: match.length)
@@ -39,13 +39,13 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
     {
         let startPosition = position
         let key = parser.tag.map { Key(offset: offset(position), tag: $0) }
-        let result = wrap(key: key) { () -> Result<TerminalMatch<P.Symbol>, Mismatch> in
+        let result = wrap(key: key) { () -> Result<Match<P.Symbol>, Mismatch> in
             stack.append((startPosition, parser.tag))
             defer { stack.removeLast() }
             //if let _ = parser.tag { print(trace) }
             return parser.parse(self)
                 .map { symbol in
-                    TerminalMatch(symbol: symbol, length: source.distance(from: startPosition, to: position))
+                    Match(symbol: symbol, length: source.distance(from: startPosition, to: position))
                 }
         }
 
@@ -66,10 +66,10 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             .joined(separator: " ")
     }
 
-    private func wrap<Key: Hashable, Symbol>(key: Key?, _ f: () -> Result<TerminalMatch<Symbol>, Mismatch>) -> Result<TerminalMatch<Symbol>, Mismatch> {
+    private func wrap<Key: Hashable, Symbol>(key: Key?, _ f: () -> Result<Match<Symbol>, Mismatch>) -> Result<Match<Symbol>, Mismatch> {
         return depthLimiter.limitDepth(key: key, limit: source.count - offset(position), {
                     memoizer.memoize(key: key, context: self, {
-                            AnyTerminalMatchResult(f())
+                            AnyMatchResult(f())
                         })
                         .cast()
                     ??  .failure(Mismatch(message: trace + " Type cast error"))
@@ -77,7 +77,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             ??  .failure(Mismatch(message: trace + " Depth cut-off"))
     }
 
-    private var memoizer = Memoizer<GenericParserCore, AnyTerminalMatchResult>(
+    private var memoizer = Memoizer<GenericParserCore, AnyMatchResult>(
         shouldUpdate: { cached, candidate -> Bool in
             if let candidateMatch = candidate.value {
                 if let cachedMatch = cached.value {

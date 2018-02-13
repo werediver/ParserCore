@@ -33,7 +33,7 @@ final class Num {
 final class Plus {}
 
 enum LSumParser<Core: ParserCoreProtocol> where
-    Core.Source == String.CharacterView
+    Core.Source == String
 {
     typealias Parser<Symbol> = GenericParser<Core, Symbol>
 

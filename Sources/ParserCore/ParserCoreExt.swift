@@ -7,7 +7,7 @@ public extension ParserCoreProtocol {
     {
         return GenericParser(tag: tag) { _, core in
             _ = core.parse(parser)
-            return .success()
+            return .success(Void())
         }
     }
 
@@ -36,8 +36,8 @@ public extension ParserCoreProtocol {
 
     static func end() -> GenericParser<Self, ()> {
         return GenericParser<Self, ()> { _, core in
-            core.accept { tail -> TerminalMatch<()>? in
-                    return tail.count == 0 ? TerminalMatch(symbol: (), length: 0) : nil
+            core.accept { tail -> Match<()>? in
+                    return tail.count == 0 ? Match(symbol: (), length: 0) : nil
                 }
                 .map(Result.success)
             ??  .failure(Mismatch(message: "End of input is expected"))
@@ -49,10 +49,10 @@ public extension ParserCoreProtocol {
         while predicate: @escaping (Source.SubSequence.Iterator.Element) -> Bool
     ) -> GenericParser<Self, Source.SubSequence> {
         return GenericParser(tag: tag) { _, core in
-            core.accept { tail -> TerminalMatch<Source.SubSequence>? in
+            core.accept { tail -> Match<Source.SubSequence>? in
                     let match = tail.prefix(while: predicate)
                     if match.count > 0 {
-                        return TerminalMatch(symbol: match, length: match.count)
+                        return Match(symbol: match, length: match.count)
                     } else {
                         return nil
                     }
@@ -71,8 +71,8 @@ public extension ParserCoreProtocol where
         _ pattern: Source.SubSequence
     ) -> GenericParser<Self, Source.SubSequence> {
         return GenericParser(tag: tag) { _, core in
-            core.accept { tail -> TerminalMatch<Source.SubSequence>? in
-                    tail.starts(with: pattern) ? TerminalMatch(symbol: pattern, length: pattern.count) : nil
+            core.accept { tail -> Match<Source.SubSequence>? in
+                    tail.starts(with: pattern) ? Match(symbol: pattern, length: pattern.count) : nil
                 }
                 .map(Result.success)
             ??  .failure(Mismatch())
@@ -81,12 +81,8 @@ public extension ParserCoreProtocol where
 }
 
 public extension ParserCoreProtocol where
-    Source == String.CharacterView
+    Source == String
 {
-    static func string(tag: String? = nil, _ pattern: String) -> GenericParser<Self, String> {
-        return string(tag: tag, pattern.characters).map(String.init)
-    }
-
     static func string(tag: String? = nil, charset: CharacterSet) -> GenericParser<Self, String> {
         return string(tag: tag, while: charset.contains).map(String.init)
     }
