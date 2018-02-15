@@ -17,10 +17,6 @@ final class DepthLimiter {
 extension DepthLimiter {
 
     func limitDepth<Key: Hashable, T>(key: Key?, limit: Int, _ f: () -> T) -> T? {
-        if let key = key {
-            return limitDepth(key: key, limit: limit, f)
-        } else {
-            return f()
-        }
+        return key.map { limitDepth(key: $0, limit: limit, f) } ?? f()
     }
 }

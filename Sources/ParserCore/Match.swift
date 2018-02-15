@@ -25,9 +25,10 @@ struct AnyMatch: MatchRepresenting {
     var length: Int { return match.length }
 
     func cast<T>() -> Match<T>? {
-        return Optional(condition: T.self == symbolType).flatMap {
-            (symbol as? T).map { Match(symbol: $0, length: length) }
-        }
+        guard T.self == symbolType
+        else { return nil }
+
+        return (symbol as? T).map { Match(symbol: $0, length: length) }
     }
 
     init<T: MatchRepresenting>(_ match: T) {
@@ -41,22 +42,23 @@ struct AnyMatch: MatchRepresenting {
 
 struct AnyMatchResult: EitherRepresenting {
 
-    typealias Right = AnyMatch
     typealias Left = Mismatch
+    typealias Right = AnyMatch
 
     func iif<T>(right: (Right) throws -> T, left: (Left) throws -> T) rethrows -> T {
         return try result.iif(right: right, left: left)
     }
 
     func cast<Symbol>() -> Either<Mismatch, Match<Symbol>>? {
-        return Optional(condition: Symbol.self == symbolType).flatMap {
-            result.iif(right: { $0.cast().map(Either.right) }, left: Either.left)
-        }
+        guard Symbol.self == symbolType
+        else { return nil }
+
+        return result.iif(right: { $0.cast().map(Either.right) }, left: Either.left)
     }
 
     init<Result: EitherRepresenting>(_ result: Result) where
-        Result.Right: MatchRepresenting,
-        Result.Left == Mismatch
+        Result.Left == Mismatch,
+        Result.Right: MatchRepresenting
     {
         self.result = result.map { AnyMatch($0) }
         self.symbolType = Result.Right.Symbol.self

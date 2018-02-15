@@ -77,10 +77,10 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             ??  .left(Mismatch(message: trace + " Depth cut-off"))
     }
 
-    private var memoizer = Memoizer<GenericParserCore, AnyMatchResult>(
+    private let memoizer = Memoizer<GenericParserCore, AnyMatchResult>(
         shouldUpdate: { cached, candidate -> Bool in
-            if let candidateMatch = candidate.value {
-                if let cachedMatch = cached.value {
+            if let candidateMatch = candidate.right {
+                if let cachedMatch = cached.right {
                     return candidateMatch.length > cachedMatch.length
                 }
                 return true
@@ -88,7 +88,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             return false
         },
         willReturnFromCache: { context, cached in
-            if  let match = cached.value,
+            if  let match = cached.right,
                 let startPosition = context.stack.last?.startPosition
             {
                 context.position = context.source.index(startPosition, offsetBy: match.length)

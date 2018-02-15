@@ -10,13 +10,9 @@ public protocol EitherRepresenting {
 
 public extension EitherRepresenting {
 
-    var value: Right? {
-        return iif(right: { $0 }, left: { _ in nil })
-    }
+    var left: Left? { return iif(right: const(nil), left: id) }
 
-    var error: Left? {
-        return iif(right: { _ in nil }, left: { $0 })
-    }
+    var right: Right? { return iif(right: id, left: const(nil)) }
 
     func map<T>(_ transform: (Right) throws -> T) rethrows -> Either<Left, T> {
         return try iif(right: { try .right(transform($0)) }, left: Either.left)
@@ -26,7 +22,7 @@ public extension EitherRepresenting {
         return try iif(right: transform, left: Either.left)
     }
 
-    func mapError<T>(_ transform: (Left) throws -> T) rethrows -> Either<T, Right> {
+    func mapLeft<T>(_ transform: (Left) throws -> T) rethrows -> Either<T, Right> {
         return try iif(right: Either.right, left: { try .left(transform($0)) })
     }
 

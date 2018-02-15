@@ -53,7 +53,7 @@ public extension ParserProtocol {
     func mapError(tag: String? = nil, _ transform: @escaping (Mismatch) -> Mismatch) -> GenericParser<Core, Symbol> {
         return GenericParser(tag: tag) { _, core in
             core.parse(self)
-                .mapError(transform)
+                .mapLeft(transform)
         }
     }
 }
