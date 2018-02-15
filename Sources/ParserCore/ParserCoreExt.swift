@@ -93,7 +93,10 @@ public extension ParserCoreProtocol {
                     return result
                 }
             }
-            return .left(Mismatch(message: "One of \(tag.unwrappedDescription) is expected"))
+            let alternatives = parsers
+                .map { $0.tag.unwrappedDescription }
+                .joined(separator: " or ")
+            return .left(Mismatch(message: "Cannot parse \(tag.unwrappedDescription): \(alternatives) is expected"))
         }
     }
 }

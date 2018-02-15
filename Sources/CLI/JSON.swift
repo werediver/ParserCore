@@ -28,20 +28,38 @@ enum JSONParser<Core: ParserCoreProtocol> where
     static func value() -> Parser<JSON> {
         return Core.oneOf(
                 tag: "VALUE",
-                //object(),
-                array(),
+                objectValue(),
+                arrayValue(),
                 //number(),
-                //string(),
-                bool(),
-                null()
+                stringValue(),
+                boolValue(),
+                nullValue()
             )
     }
 
-    static func object() -> Parser<JSON> {
-        fatalError()
+    static func objectValue() -> Parser<JSON> {
+        return Core.string(tag: "OBJECT_START", "{")
+            .flatMap(tag: "OBJECT") { _ in
+                Core.list(tag: "OBJECT_PROPERTIES", item: property(), separator: Core.string(","))
+                    .flatMap { properties in
+                        Core.string(tag: "OBJECT_END", "}")
+                            .map { _ in .object(.init(uniqueKeysWithValues: properties)) }
+                    }
+            }
     }
 
-    static func array() -> Parser<JSON> {
+    static func property() -> Parser<(String, JSON)> {
+        return string()
+            .flatMap(tag: "PROPERTY") { name in
+                Core.string(":")
+                    .flatMap { _ in
+                        value()
+                            .map { value in (name, value) }
+                    }
+            }
+    }
+
+    static func arrayValue() -> Parser<JSON> {
         return Core.string(tag: "ARRAY_START", "[")
             .flatMap { _ in
                 Core.list(tag: "ARRAY_ITEMS", item: value(), separator: Core.string(","))
@@ -52,15 +70,28 @@ enum JSONParser<Core: ParserCoreProtocol> where
             }
     }
 
-    static func number() -> Parser<JSON> {
+    static func numberValue() -> Parser<JSON> {
         fatalError()
     }
 
-    static func string() -> Parser<JSON> {
-        fatalError()
+    static func stringValue() -> Parser<JSON> {
+        return string()
+            .map(JSON.string)
     }
 
-    static func bool() -> Parser<JSON> {
+    /// An overly simplified string parser
+    static func string() -> Parser<String> {
+        return Core.string(tag: "STRING_START", "\"")
+            .flatMap { _ in
+                Core.string(while: { $0 != "\"" })
+                    .flatMap { string in
+                        Core.string(tag: "STRING_END", "\"")
+                            .map(const(String(string)))
+                    }
+            }
+    }
+
+    static func boolValue() -> Parser<JSON> {
         return Core.oneOf(
                 tag: "BOOL",
                 Core.string(tag: "FALSE", "false")
@@ -70,7 +101,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
             )
     }
 
-    static func null() -> Parser<JSON> {
+    static func nullValue() -> Parser<JSON> {
         return Core.string(tag: "NULL", "null")
             .map(const(JSON.null))
     }

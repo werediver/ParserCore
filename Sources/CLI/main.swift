@@ -6,7 +6,7 @@ import ParserCore
 //let result = core.parse(LSumParser.start())
 //dump(result)
 
-let source = "[true,false,null,[true],[]]"
+let source = "{\"array\":[\"a\\nb\",true,false,null,[true],[]],\"nothing\":null}"
 print(source)
 let core = GenericParserCore(source: source)
 let result = core.parse(JSONParser.start())
