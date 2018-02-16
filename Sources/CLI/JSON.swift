@@ -30,7 +30,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
                 tag: "VALUE",
                 objectValue(),
                 arrayValue(),
-                //number(),
+                numberValue(),
                 stringValue(),
                 boolValue(),
                 nullValue()
@@ -71,7 +71,13 @@ enum JSONParser<Core: ParserCoreProtocol> where
     }
 
     static func numberValue() -> Parser<JSON> {
-        fatalError()
+        return Core.string(tag: "NUMBER_RAW", regex: "-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?")
+            .attemptMap(tag: "NUMBER") { text in
+                Double(text)
+                    .map(JSON.number)
+                    .map(Either.right)
+                ??  .left(Mismatch())
+            }
     }
 
     static func stringValue() -> Parser<JSON> {
@@ -83,7 +89,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
     static func string() -> Parser<String> {
         return Core.string(tag: "STRING_START", "\"")
             .flatMap { _ in
-                Core.string(while: { $0 != "\"" })
+                Core.string(tag: "STRING_BODY", while: { $0 != "\"" })
                     .flatMap { string in
                         Core.string(tag: "STRING_END", "\"")
                             .map(const(String(string)))
@@ -108,3 +114,5 @@ enum JSONParser<Core: ParserCoreProtocol> where
 }
 
 private let whitespace = CharacterSet(charactersIn: "\t\n\r ")
+private let nonZeroDigits = CharacterSet(charactersIn: "123456789")
+private let digits = CharacterSet(charactersIn: "0").union(nonZeroDigits)

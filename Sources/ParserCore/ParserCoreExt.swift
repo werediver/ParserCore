@@ -152,6 +152,17 @@ public extension ParserCoreProtocol where
 public extension ParserCoreProtocol where
     Source == String
 {
+    static func string(tag: String? = nil, regex: RegEx) -> GenericParser<Self, String> {
+        return GenericParser(tag: tag) { _, core in
+            core.accept { tail -> Match<String>? in
+                    regex.firstMatch(in: String(tail), options: .anchored)?.matches.first
+                        .map { Match(symbol: $0, length: $0.count) }
+                }
+                .map(Either.right)
+            ??  .left(Mismatch())
+        }
+    }
+
     static func string(tag: String? = nil, charset: CharacterSet) -> GenericParser<Self, String> {
         return string(tag: tag, while: charset.contains).map(String.init)
     }
