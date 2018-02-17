@@ -3,9 +3,7 @@ import Foundation
 public extension ParserCoreProtocol {
 
     static func empty(tag: String? = nil) -> GenericParser<Self, ()> {
-        return GenericParser(tag: tag) { _, _ in
-            .right(Void())
-        }
+        return GenericParser(tag: tag, const(.right(Void())))
     }
 
     static func skip<Parser: ParserProtocol>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, ()> where
@@ -21,14 +19,8 @@ public extension ParserCoreProtocol {
         Parser.Core == Self
     {
         return GenericParser(tag: tag) { _, core in
-            core.parse(parser)
-                .iif(right: Either.right, left: const(.right(nil)))
+            .right(core.parse(parser).right)
         }
-        /* return oneOf(
-                tag: tag,
-                parser.map(Optional.init),
-                empty().map(const(nil))
-            ) */
     }
 
     static func many<Parser: ParserProtocol>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, [Parser.Symbol]> where
@@ -96,7 +88,7 @@ public extension ParserCoreProtocol {
             let alternatives = parsers
                 .map { $0.tag.unwrappedDescription }
                 .joined(separator: " or ")
-            return .left(Mismatch(message: "Cannot parse \(tag.unwrappedDescription): \(alternatives) is expected"))
+            return .left(Mismatch(tag: tag, .serializedExpectation(alternatives)))
         }
     }
 }
@@ -109,7 +101,7 @@ public extension ParserCoreProtocol {
                     return tail.count == 0 ? Match(symbol: (), length: 0) : nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(message: "End of input is expected"))
+            ??  .left(Mismatch(tag: nil, .serializedExpectation("end of input")))
         }
     }
 
@@ -120,14 +112,10 @@ public extension ParserCoreProtocol {
         return GenericParser(tag: tag) { _, core in
             core.accept { tail -> Match<Source.SubSequence>? in
                     let match = tail.prefix(while: predicate)
-                    if match.count > 0 {
-                        return Match(symbol: match, length: match.count)
-                    } else {
-                        return nil
-                    }
+                    return Match(symbol: match, length: match.count)
                 }
                 .map(Either.right)
-            ??  .left(Mismatch())
+            ??  .left(Mismatch(tag: tag))
         }
     }
 }
@@ -144,7 +132,7 @@ public extension ParserCoreProtocol where
                     tail.starts(with: pattern) ? Match(symbol: pattern, length: pattern.count) : nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch())
+            ??  .left(Mismatch(tag: tag, .expectation(pattern)))
         }
     }
 }
@@ -159,7 +147,7 @@ public extension ParserCoreProtocol where
                         .map { Match(symbol: ($0.firstGroup, Array($0.groups.dropFirst())), length: $0.firstGroup.count) }
                 }
                 .map(Either.right)
-            ??  .left(Mismatch())
+            ??  .left(Mismatch(tag: tag, .serializedExpectation("text matching regular expression \(regex)")))
         }
     }
 

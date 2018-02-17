@@ -49,11 +49,22 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
                 }
         }
 
-        //if case let .left(error) = result {
-        if case .left = result {
+        if case let .left(mismatch) = result {
+        //if case .left = result {
+            if farthestFailure?.position ?? source.startIndex < position {
+                farthestFailure = (position, [(trace, mismatch)])
+            } else if farthestFailure?.position ?? source.startIndex == position {
+                farthestFailure = (position, (farthestFailure?.failures ?? []) + [(trace, mismatch)])
+            }
+
             position = startPosition
             //print("\(offset(position)): \(error)")
+        } else if case .right = result {
+            if farthestFailure?.position ?? source.startIndex < position {
+                farthestFailure = nil
+            }
         }
+
         return result.map { match in match.symbol }
     }
 
@@ -61,10 +72,13 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
     private var stack: [(startPosition: Source.Index, tag: String?)] = []
     private var trace: String {
         return stack
+            .reversed()
             .filter { $0.tag != nil }
             .map { "\(offset($0.startPosition)):\($0.tag.unwrappedDescription)" }
             .joined(separator: " ")
     }
+
+    public var farthestFailure: (position: Source.Index, failures: [(trace: String, mismatch: Mismatch)])?
 
     private func wrap<Key: Hashable, Symbol>(key: Key?, _ f: () -> Either<Mismatch, Match<Symbol>>) -> Either<Mismatch, Match<Symbol>> {
         return depthLimiter.limitDepth(key: key, limit: source.count - offset(position), {

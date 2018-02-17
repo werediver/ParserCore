@@ -1,16 +1,3 @@
-public struct Mismatch {
-
-    public let message: String?
-
-    public init(message: String? = nil) {
-        self.message = message
-    }
-}
-
-extension Mismatch: CustomStringConvertible {
-    public var description: String { return message ?? "No match" }
-}
-
 public protocol ParserProtocol {
 
     associatedtype Core: ParserCoreProtocol

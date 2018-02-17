@@ -14,3 +14,7 @@ public func id<T>(_ some: T) -> T {
 public func const<T>(_ some: T) -> (Any) -> T {
     return { _ in some }
 }
+
+public func const<T>(_ some: T) -> (Any, Any) -> T {
+    return { _, _ in some }
+}
