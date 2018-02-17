@@ -20,7 +20,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
     static func start() -> Parser<JSON> {
         return value()
             .flatMap { value in
-                Core.end()
+                leadingWhitespace <| Core.end()
                     .map(const(value))
             }
     }
@@ -38,11 +38,11 @@ enum JSONParser<Core: ParserCoreProtocol> where
     }
 
     static func objectValue() -> Parser<JSON> {
-        return Core.string(tag: "OBJECT_START", "{")
+        return leadingWhitespace <| Core.string(tag: "OBJECT_START", "{")
             .flatMap(tag: "OBJECT") { _ in
-                Core.list(tag: "OBJECT_PROPERTIES", item: property(), separator: Core.string(","))
+                Core.list(tag: "OBJECT_PROPERTIES", item: property(), separator: leadingWhitespace <| Core.string(","))
                     .flatMap { properties in
-                        Core.string(tag: "OBJECT_END", "}")
+                        leadingWhitespace <| Core.string(tag: "OBJECT_END", "}")
                             .map { _ in .object(.init(uniqueKeysWithValues: properties)) }
                     }
             }
@@ -51,7 +51,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
     static func property() -> Parser<(String, JSON)> {
         return string()
             .flatMap(tag: "PROPERTY") { name in
-                Core.string(":")
+                leadingWhitespace <| Core.string(":")
                     .flatMap { _ in
                         value()
                             .map { value in (name, value) }
@@ -60,20 +60,20 @@ enum JSONParser<Core: ParserCoreProtocol> where
     }
 
     static func arrayValue() -> Parser<JSON> {
-        return Core.string(tag: "ARRAY_START", "[")
+        return leadingWhitespace <| Core.string(tag: "ARRAY_START", "[")
             .flatMap { _ in
-                Core.list(tag: "ARRAY_ITEMS", item: value(), separator: Core.string(","))
+                Core.list(tag: "ARRAY_ITEMS", item: value(), separator: leadingWhitespace <| Core.string(","))
                     .flatMap { items in
-                        Core.string(tag: "ARRAY_END", "]")
+                        leadingWhitespace <| Core.string(tag: "ARRAY_END", "]")
                             .map(const(.array(items)))
                     }
             }
     }
 
     static func numberValue() -> Parser<JSON> {
-        return Core.string(tag: "NUMBER_RAW", regex: "-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?")
-            .attemptMap(tag: "NUMBER") { text in
-                Double(text)
+        return leadingWhitespace <| Core.string(tag: "NUMBER_RAW", regex: "-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?")
+            .attemptMap(tag: "NUMBER") { firstGroup, _ in
+                Double(firstGroup)
                     .map(JSON.number)
                     .map(Either.right)
                 ??  .left(Mismatch())
@@ -87,7 +87,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
 
     /// An overly simplified string parser
     static func string() -> Parser<String> {
-        return Core.string(tag: "STRING_START", "\"")
+        return leadingWhitespace <| Core.string(tag: "STRING_START", "\"")
             .flatMap { _ in
                 Core.string(tag: "STRING_BODY", while: { $0 != "\"" })
                     .flatMap { string in
@@ -98,7 +98,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
     }
 
     static func boolValue() -> Parser<JSON> {
-        return Core.oneOf(
+        return leadingWhitespace <| Core.oneOf(
                 tag: "BOOL",
                 Core.string(tag: "FALSE", "false")
                     .map(const(JSON.bool(false))),
@@ -108,11 +108,18 @@ enum JSONParser<Core: ParserCoreProtocol> where
     }
 
     static func nullValue() -> Parser<JSON> {
-        return Core.string(tag: "NULL", "null")
+        return leadingWhitespace <| Core.string(tag: "NULL", "null")
             .map(const(JSON.null))
+    }
+
+    static func leadingWhitespace<T>(and parser: Parser<T>) -> Parser<T> {
+        return Core.skip(tag: "WHITESPACE", Core.string(charset: Charset.whitespace))
+            .flatMap(const(parser))
     }
 }
 
-private let whitespace = CharacterSet(charactersIn: "\t\n\r ")
-private let nonZeroDigits = CharacterSet(charactersIn: "123456789")
-private let digits = CharacterSet(charactersIn: "0").union(nonZeroDigits)
+private enum Charset {
+    static let whitespace = CharacterSet(charactersIn: "\t\n\r ")
+    static let nonZeroDigits = CharacterSet(charactersIn: "123456789")
+    static let digits = CharacterSet(charactersIn: "0").union(nonZeroDigits)
+}

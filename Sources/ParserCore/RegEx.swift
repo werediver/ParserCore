@@ -5,11 +5,12 @@ public struct RegEx {
     public struct Result {
 
         public let ranges: [Range<String.Index>]
-        public let matches: [String]
+        public let groups: [String]
+        public var firstGroup: String! { return groups.first }
 
         public init(_ result: NSTextCheckingResult, in src: String) {
             self.ranges = (0 ..< result.numberOfRanges).flatMap { Range(result.range(at: $0), in: src) }
-            self.matches = ranges.map { String(src[$0]) }
+            self.groups = ranges.map { String(src[$0]) }
         }
     }
 
