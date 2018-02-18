@@ -99,15 +99,47 @@ enum JSONParser<Core: ParserCoreProtocol> where
             .map(JSON.string)
     }
 
-    /// An overly simplified string parser
     static func string() -> Parser<String> {
         return leadingWhitespace <|
-            Core.string(tag: "STRING_START", "\"")
-                .flatMap(tag: "STRING") { _ in
-                    Core.string(while: { $0 != "\"" })
-                        .flatMap { string in
-                            Core.string(tag: "STRING_END", "\"")
-                                .map(const(String(string)))
+            Core.string("\"")
+                .flatMap(tag: "STRING") { _ -> Parser<String> in
+                    Core.many(
+                        Core.oneOf(
+                            Core.string(charset: Charset.stringUnescapedCharacters)
+                                .attemptMap { text in
+                                    text.count > 0 ? .right(String(text)) : .left(Mismatch())
+                                },
+                            Core.string("\\")
+                                .flatMap { _ -> Parser<String> in
+                                    Core.oneOf(
+                                        Core.string("\"").map(String.init),
+                                        Core.string("\\").map(String.init),
+                                        Core.string("/").map(String.init),
+                                        Core.string("b").map(const("\u{0008}")),
+                                        Core.string("f").map(const("\u{000C}")),
+                                        Core.string("n").map(const("\n")),
+                                        Core.string("r").map(const("\r")),
+                                        Core.string("t").map(const("\t")),
+                                        Core.string("u")
+                                            .flatMap { _ -> Parser<String> in
+                                                Core.string(regex: "[0-9A-Fa-f]{4}")
+                                                    .attemptMap { text, _ in
+                                                        Int(text, radix: 16)
+                                                            .flatMap(UnicodeScalar.init)
+                                                            .map(Character.init)
+                                                            .map(String.init)
+                                                            .map(Either.right)
+                                                        ??  .left(Mismatch(message: "Invalid unicode escape sequence \"\(text)\""))
+                                                    }
+                                            }
+                                    )
+                                }
+                            )
+                        )
+                        .map { $0.joined() }
+                        .flatMap { text -> Parser<String> in
+                            Core.string("\"")
+                                .map(const(text))
                         }
                 }
     }
@@ -139,4 +171,5 @@ private enum Charset {
     static let whitespace = CharacterSet(charactersIn: "\t\n\r ")
     static let nonZeroDigits = CharacterSet(charactersIn: "123456789")
     static let digits = CharacterSet(charactersIn: "0").union(nonZeroDigits)
+    static let stringUnescapedCharacters = CharacterSet.controlCharacters.union(CharacterSet(charactersIn: "\"\\")).inverted
 }
