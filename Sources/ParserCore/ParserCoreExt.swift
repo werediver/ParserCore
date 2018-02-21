@@ -58,9 +58,8 @@ public extension ParserCoreProtocol {
             core.parse(item)
                 .map { first in
                     var items = [first]
-                    while let _ = core.parse(separator).right,
-                          let next = core.parse(item).right
-                    {
+                    let followingItem = separator.flatMap(const(item))
+                    while let next = core.parse(followingItem).right {
                         items.append(next)
                     }
                     return .right(items)
@@ -85,10 +84,15 @@ public extension ParserCoreProtocol {
                     return result
                 }
             }
-            let alternatives = parsers
-                .map { $0.tag.unwrappedDescription }
-                .joined(separator: " or ")
-            return .left(Mismatch(tag: tag, .serializedExpectation(alternatives)))
+
+            var expectation: Mismatch.Expectation?
+            if parsers.flatMap({ $0.tag }).count > 0 {
+                let alternatives = parsers
+                    .map { $0.tag.unwrappedDescription }
+                    .joined(separator: " or ")
+                expectation = .serializedExpectation(alternatives)
+            }
+            return .left(Mismatch(tag: tag, expectation))
         }
     }
 }

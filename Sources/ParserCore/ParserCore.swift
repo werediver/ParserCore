@@ -75,7 +75,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             .reversed()
             .filter { $0.tag != nil }
             .map { "\(offset($0.startPosition)):\($0.tag.unwrappedDescription)" }
-            .joined(separator: " ")
+            .joined(separator: " ◂ ")
     }
 
     public var farthestFailure: (position: Source.Index, failures: [(trace: String, mismatch: Mismatch)])?

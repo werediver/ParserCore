@@ -1,9 +1,9 @@
 import Foundation
 import ParserCore
 
-enum JSON {
+public enum JSON {
 
-    typealias Object = [String: JSON]
+    public typealias Object = [String: JSON]
 
     case object(Object)
     indirect case array([JSON])
@@ -13,12 +13,14 @@ enum JSON {
     case null
 }
 
-enum JSONParser<Core: ParserCoreProtocol> where
+public enum JSONParser<Core: ParserCoreProtocol> where
     Core.Source == String
 {
-    typealias Parser<Symbol> = GenericParser<Core, Symbol>
+    public typealias Parser<Symbol> = GenericParser<Core, Symbol>
 
-    static func start() -> Parser<JSON> {
+    typealias Property = (key: String, value: JSON)
+
+    public static func start() -> Parser<JSON> {
         return value()
             .flatMap { value in
                 leadingWhitespace <|
@@ -30,19 +32,20 @@ enum JSONParser<Core: ParserCoreProtocol> where
     static func value() -> Parser<JSON> {
         return Core.oneOf(
                 tag: "VALUE",
-                objectValue(),
-                arrayValue(),
-                numberValue(),
-                stringValue(),
-                boolValue(),
-                nullValue()
+                objectLiteral().map(JSON.object),
+                arrayLiteral().map(JSON.array),
+                numberLiteral().map(JSON.number),
+                stringLiteral().map(JSON.string),
+                boolLiteral().map(JSON.bool),
+                null()
             )
     }
 
-    static func objectValue() -> Parser<JSON> {
+    static func objectLiteral() -> Parser<JSON.Object> {
         return leadingWhitespace <|
+            tag("OBJECT") <|
             Core.string(tag: "OBJECT_START", "{")
-                .flatMap(tag: "OBJECT_VALUE") { _ in
+                .flatMap { _ in
                     Core.list(
                             item: property(),
                             separator: leadingWhitespace <| Core.string(",")
@@ -50,27 +53,36 @@ enum JSONParser<Core: ParserCoreProtocol> where
                         .flatMap { properties in
                             leadingWhitespace <|
                             Core.string(tag: "OBJECT_END", "}")
-                                .map { _ in .object(.init(uniqueKeysWithValues: properties)) }
+                                .map(const(makeObject(with: properties)))
                         }
                 }
     }
 
-    static func property() -> Parser<(String, JSON)> {
-        return string()
-            .flatMap(tag: "PROPERTY") { name in
-                leadingWhitespace <|
-                Core.string(":")
-                    .flatMap { _ in
-                        value()
-                            .map { value in (name, value) }
-                    }
-            }
+    static func makeObject(with properties: [Property]) -> JSON.Object {
+        var object = JSON.Object()
+        object.reserveCapacity(properties.count)
+        properties.forEach { property in object[property.key] = property.value }
+        return object
     }
 
-    static func arrayValue() -> Parser<JSON> {
+    static func property() -> Parser<Property> {
+        return tag("PROPERTY") <|
+            stringLiteral()
+                .flatMap { name in
+                    leadingWhitespace <|
+                    Core.string(":")
+                        .flatMap { _ in
+                            value()
+                                .map { value in (name, value) }
+                        }
+                }
+    }
+
+    static func arrayLiteral() -> Parser<[JSON]> {
         return leadingWhitespace <|
+            tag("ARRAY") <|
             Core.string(tag: "ARRAY_START", "[")
-                .flatMap(tag: "ARRAY_VALUE") { _ in
+                .flatMap { _ in
                     Core.list(
                             item: value(),
                             separator: leadingWhitespace <| Core.string(",")
@@ -78,37 +90,35 @@ enum JSONParser<Core: ParserCoreProtocol> where
                         .flatMap { items in
                             leadingWhitespace <|
                             Core.string(tag: "ARRAY_END", "]")
-                                .map(const(.array(items)))
+                                .map(const(items))
                         }
                 }
     }
 
-    static func numberValue() -> Parser<JSON> {
+    static func numberLiteral() -> Parser<Double> {
         return leadingWhitespace <|
+            tag("NUMBER") <|
             Core.string(regex: "-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?")
-                .attemptMap(tag: "NUMBER_VALUE") { firstGroup, _ in
+                .attemptMap { firstGroup, _ in
                     Double(firstGroup)
-                        .map(JSON.number)
                         .map(Either.right)
-                    ??  .left(Mismatch())
+                    ??  .left(Mismatch(message: "Cannot create a number from text \"\(firstGroup)\""))
                 }
     }
 
-    static func stringValue() -> Parser<JSON> {
-        return string()
-            .map(JSON.string)
-    }
-
-    static func string() -> Parser<String> {
+    static func stringLiteral() -> Parser<String> {
         return leadingWhitespace <|
+            tag("STRING") <|
             Core.string("\"")
-                .flatMap(tag: "STRING") { _ -> Parser<String> in
+                .flatMap { _ -> Parser<String> in
                     Core.many(
                         Core.oneOf(
+                            tag("UNESCAPED_CHARACTER") <|
                             Core.string(charset: Charset.stringUnescapedCharacters)
                                 .attemptMap { text in
                                     text.count > 0 ? .right(String(text)) : .left(Mismatch())
                                 },
+                            tag("ESCAPE_SEQUENCE") <|
                             Core.string("\\")
                                 .flatMap { _ -> Parser<String> in
                                     Core.oneOf(
@@ -136,7 +146,7 @@ enum JSONParser<Core: ParserCoreProtocol> where
                                 }
                             )
                         )
-                        .map { $0.joined() }
+                        .map { substrings in substrings.joined() }
                         .flatMap { text -> Parser<String> in
                             Core.string("\"")
                                 .map(const(text))
@@ -144,32 +154,39 @@ enum JSONParser<Core: ParserCoreProtocol> where
                 }
     }
 
-    static func boolValue() -> Parser<JSON> {
+    static func boolLiteral() -> Parser<Bool> {
         return leadingWhitespace <|
+            tag("BOOL") <|
             Core.oneOf(
-                tag: "BOOL_VALUE",
                 Core.string(tag: "FALSE", "false")
-                    .map(const(JSON.bool(false))),
+                    .map(const(false)),
                 Core.string(tag: "TRUE", "true")
-                    .map(const(JSON.bool(true)))
+                    .map(const(true))
             )
     }
 
-    static func nullValue() -> Parser<JSON> {
+    static func null() -> Parser<JSON> {
         return leadingWhitespace <|
-            Core.string("null")
-                .map(tag: "NULL_VALUE", const(JSON.null))
+            Core.string(tag: "NULL", "null")
+                .map(const(JSON.null))
     }
 
     static func leadingWhitespace<T>(before parser: Parser<T>) -> Parser<T> {
         return Core.skip(Core.string(tag: "WHITESPACE", charset: Charset.whitespace))
             .flatMap(tag: parser.tag.map { "_\($0)" }, const(parser))
     }
+
+    static func tag<T>(_ tag: String) -> (Parser<T>) -> Parser<T> {
+        return { parser in parser.map(tag: tag, id) }
+    }
 }
 
-private enum Charset {
+enum Charset {
     static let whitespace = CharacterSet(charactersIn: "\t\n\r ")
     static let nonZeroDigits = CharacterSet(charactersIn: "123456789")
     static let digits = CharacterSet(charactersIn: "0").union(nonZeroDigits)
-    static let stringUnescapedCharacters = CharacterSet.controlCharacters.union(CharacterSet(charactersIn: "\"\\")).inverted
+    static let stringUnescapedCharacters =
+        CharacterSet(charactersIn: UnicodeScalar(0) ... UnicodeScalar(0x1F))
+        .union(CharacterSet(charactersIn: "\"\\"))
+        .inverted
 }

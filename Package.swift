@@ -6,6 +6,7 @@ let package = Package(
     name: "ParserCore",
     products: [
         .library(name: "ParserCore", targets: ["ParserCore"]),
+        .library(name: "JSON", targets: ["JSON"]),
         .executable(name: "CLI", targets: ["CLI"])
     ],
     targets: [
@@ -13,8 +14,12 @@ let package = Package(
             name: "ParserCore"
         ),
         .target(
-            name: "CLI",
+            name: "JSON",
             dependencies: ["ParserCore"]
+        ),
+        .target(
+            name: "CLI",
+            dependencies: ["ParserCore", "JSON"]
         )
     ]
 )

@@ -10,10 +10,10 @@ precedencegroup BackwardPipePrecedence {
 infix operator |>: ForwardPipePrecedence
 infix operator <|: BackwardPipePrecedence
 
-func |> <T, U>(lhs: T, rhs: (T) -> U) -> U {
+public func |> <T, U>(lhs: T, rhs: (T) -> U) -> U {
     return rhs(lhs)
 }
 
-func <| <T, U>(lhs: (T) -> U, rhs: T) -> U {
+public func <| <T, U>(lhs: (T) -> U, rhs: T) -> U {
     return lhs(rhs)
 }
