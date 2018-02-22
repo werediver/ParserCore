@@ -6,15 +6,6 @@ public extension ParserCoreProtocol {
         return GenericParser(tag: tag, const(.right(Void())))
     }
 
-    static func skip<Parser: ParserProtocol>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, ()> where
-        Parser.Core == Self
-    {
-        return GenericParser(tag: tag) { _, core in
-            _ = core.parse(parser)
-            return .right(Void())
-        }
-    }
-
     static func maybe<Parser: ParserProtocol>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, Parser.Symbol?> where
         Parser.Core == Self
     {
@@ -116,7 +107,7 @@ public extension ParserCoreProtocol {
         return GenericParser(tag: tag) { _, core in
             core.accept { tail -> Match<Source.SubSequence>? in
                     let match = tail.prefix(while: predicate)
-                    return Match(symbol: match, length: match.count)
+                    return match.count > 0 ? Match(symbol: match, length: match.count) : nil
                 }
                 .map(Either.right)
             ??  .left(Mismatch(tag: tag))

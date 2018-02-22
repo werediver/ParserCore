@@ -114,10 +114,7 @@ public enum JSONParser<Core: ParserCoreProtocol> where
                     Core.many(
                         Core.oneOf(
                             tag("UNESCAPED_CHARACTER") <|
-                            Core.string(charset: Charset.stringUnescapedCharacters)
-                                .attemptMap { text in
-                                    text.count > 0 ? .right(String(text)) : .left(Mismatch())
-                                },
+                            Core.string(charset: Charset.stringUnescapedCharacters).map(String.init),
                             tag("ESCAPE_SEQUENCE") <|
                             Core.string("\\")
                                 .flatMap { _ -> Parser<String> in
@@ -172,7 +169,7 @@ public enum JSONParser<Core: ParserCoreProtocol> where
     }
 
     static func leadingWhitespace<T>(before parser: Parser<T>) -> Parser<T> {
-        return Core.skip(Core.string(tag: "WHITESPACE", charset: Charset.whitespace))
+        return Core.maybe(Core.string(tag: "WHITESPACE", charset: Charset.whitespace))
             .flatMap(tag: parser.tag.map { "_\($0)" }, const(parser))
     }
 
