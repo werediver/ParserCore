@@ -18,8 +18,11 @@ let package = Package(
             dependencies: ["ParserCore"]
         ),
         .target(
+            name: "ThreadTime"
+        ),
+        .target(
             name: "CLI",
-            dependencies: ["ParserCore", "JSON"]
+            dependencies: ["ParserCore", "JSON", "ThreadTime"]
         )
     ]
 )
