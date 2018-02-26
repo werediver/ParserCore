@@ -1,6 +1,6 @@
 public extension Optional {
 
-    var unwrappedDescription: String {
+    var someDescription: String {
         return self.map(String.init(describing:)) ?? String(describing: self)
     }
 }

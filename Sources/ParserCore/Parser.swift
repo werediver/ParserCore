@@ -1,6 +1,6 @@
-public protocol ParserProtocol {
+public protocol SomeParser {
 
-    associatedtype Core: ParserCoreProtocol
+    associatedtype Core: SomeCore
     associatedtype Symbol
     typealias Result = Either<Mismatch, Symbol>
 
@@ -9,7 +9,7 @@ public protocol ParserProtocol {
     func parse(_ core: Core) -> Result
 }
 
-public extension ParserProtocol {
+public extension SomeParser {
 
     func map<T>(tag: String? = nil, _ transform: @escaping (Symbol) -> T) -> GenericParser<Core, T> {
         return GenericParser(tag: tag) { _, core in
@@ -25,7 +25,7 @@ public extension ParserProtocol {
         }
     }
 
-    func flatMap<P: ParserProtocol>(tag: String? = nil, _ transform: @escaping (Symbol) -> P) -> GenericParser<Core, P.Symbol> where
+    func flatMap<P: SomeParser>(tag: String? = nil, _ transform: @escaping (Symbol) -> P) -> GenericParser<Core, P.Symbol> where
         P.Core == Core
     {
         return GenericParser(tag: tag) { _, core in
@@ -45,7 +45,7 @@ public extension ParserProtocol {
     }
 }
 
-public struct GenericParser<_Core: ParserCoreProtocol, _Symbol>: ParserProtocol {
+public struct GenericParser<_Core: SomeCore, _Symbol>: SomeParser {
 
     public typealias Core = _Core
     public typealias Symbol = _Symbol
@@ -66,7 +66,7 @@ public struct GenericParser<_Core: ParserCoreProtocol, _Symbol>: ParserProtocol 
 
 public extension GenericParser {
 
-    init<Parser: ParserProtocol>(tag: String? = nil, _ body: @escaping (_ this: GenericParser, Core) -> Parser) where
+    init<Parser: SomeParser>(tag: String? = nil, _ body: @escaping (_ this: GenericParser, Core) -> Parser) where
         Parser.Core == Core,
         Parser.Symbol == Symbol
     {

@@ -32,7 +32,7 @@ else { exit(ExitCode.failure) }
 var result: Either<Mismatch, JSON>?
 
 let stats = benchmark {
-    let core = GenericParserCore(source: input)
+    let core = GenericCore(source: input)
     result = core.parse(JSONParser.start())
 }
 print("Stats:\n  avg. user time: \(stats.avgUserTime) s\n  avg. sys  time: \(stats.avgSysTime) s")

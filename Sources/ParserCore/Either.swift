@@ -1,6 +1,6 @@
 public enum NoError {}
 
-public protocol EitherRepresenting {
+public protocol SomeEither {
 
     associatedtype Left
     associatedtype Right
@@ -8,7 +8,7 @@ public protocol EitherRepresenting {
     func iif<T>(right: (Right) throws -> T, left: (Left) throws -> T) rethrows -> T
 }
 
-public extension EitherRepresenting {
+public extension SomeEither {
 
     var left: Left? { return iif(right: const(nil), left: id) }
 
@@ -35,7 +35,7 @@ public extension EitherRepresenting {
     }
 }
 
-public enum Either<Left, Right>: EitherRepresenting {
+public enum Either<Left, Right>: SomeEither {
 
     case left(Left)
     case right(Right)

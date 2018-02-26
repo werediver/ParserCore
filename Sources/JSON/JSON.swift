@@ -13,7 +13,7 @@ public enum JSON {
     case null
 }
 
-public enum JSONParser<Core: ParserCoreProtocol> where
+public enum JSONParser<Core: SomeCore> where
     Core.Source == String
 {
     public typealias Parser<Symbol> = GenericParser<Core, Symbol>

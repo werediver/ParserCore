@@ -1,13 +1,13 @@
-public protocol ParserCoreProtocol: class {
+public protocol SomeCore: class {
 
     associatedtype Source: Collection where Source.SubSequence: Collection
 
     func accept<Symbol>(_ body: (Source.SubSequence) -> Match<Symbol>?) -> Symbol?
 
-    func parse<P: ParserProtocol>(_ parser: P) -> P.Result where P.Core == Self
+    func parse<P: SomeParser>(_ parser: P) -> P.Result where P.Core == Self
 }
 
-public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol where
+public final class GenericCore<_Source: Collection>: SomeCore where
     _Source.SubSequence: Collection,
     _Source.IndexDistance == Int // TODO: Consider dropping this constraint.
 {
@@ -34,8 +34,8 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
         return nil
     }
 
-    public func parse<P: ParserProtocol>(_ parser: P) -> P.Result where
-        P.Core == GenericParserCore
+    public func parse<P: SomeParser>(_ parser: P) -> P.Result where
+        P.Core == GenericCore
     {
         let startPosition = position
         let key = parser.tag.map { Key(offset: offset(position), tag: $0) }
@@ -74,7 +74,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
         return stack
             .reversed()
             .filter { $0.tag != nil }
-            .map { "\(offset($0.startPosition)):\($0.tag.unwrappedDescription)" }
+            .map { "\(offset($0.startPosition)):\($0.tag.someDescription)" }
             .joined(separator: " ◂ ")
     }
 
@@ -91,7 +91,7 @@ public final class GenericParserCore<_Source: Collection>: ParserCoreProtocol wh
             ??  .left(Mismatch(message: trace + " Depth cut-off"))
     }
 
-    private let memoizer = Memoizer<GenericParserCore, AnyMatchResult>(
+    private let memoizer = Memoizer<GenericCore, AnyMatchResult>(
         shouldUpdate: { cached, candidate -> Bool in
             if let candidateMatch = candidate.right {
                 if let cachedMatch = cached.right {

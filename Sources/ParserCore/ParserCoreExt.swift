@@ -1,12 +1,12 @@
 import Foundation
 
-public extension ParserCoreProtocol {
+public extension SomeCore {
 
     static func empty(tag: String? = nil) -> GenericParser<Self, ()> {
         return GenericParser(tag: tag, const(.right(Void())))
     }
 
-    static func maybe<Parser: ParserProtocol>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, Parser.Symbol?> where
+    static func maybe<Parser: SomeParser>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, Parser.Symbol?> where
         Parser.Core == Self
     {
         return GenericParser(tag: tag) { _, core in
@@ -14,7 +14,7 @@ public extension ParserCoreProtocol {
         }
     }
 
-    static func many<Parser: ParserProtocol>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, [Parser.Symbol]> where
+    static func many<Parser: SomeParser>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, [Parser.Symbol]> where
         Parser.Core == Self
     {
         return GenericParser(tag: tag) { _, core in
@@ -26,7 +26,7 @@ public extension ParserCoreProtocol {
         }
     }
 
-    static func some<Parser: ParserProtocol>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, [Parser.Symbol]> where
+    static func some<Parser: SomeParser>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, [Parser.Symbol]> where
         Parser.Core == Self
     {
         return GenericParser(tag: tag) { _, core in
@@ -41,7 +41,7 @@ public extension ParserCoreProtocol {
         }
     }
 
-    static func list<Item: ParserProtocol, Separator: ParserProtocol>(tag: String? = nil, item: Item, separator: Separator) -> GenericParser<Self, [Item.Symbol]> where
+    static func list<Item: SomeParser, Separator: SomeParser>(tag: String? = nil, item: Item, separator: Separator) -> GenericParser<Self, [Item.Symbol]> where
         Item.Core == Self,
         Separator.Core == Self
     {
@@ -59,13 +59,13 @@ public extension ParserCoreProtocol {
         }
     }
 
-    static func oneOf<Parser: ParserProtocol>(tag: String? = nil, _ parsers: Parser...) -> GenericParser<Self, Parser.Symbol> where
+    static func oneOf<Parser: SomeParser>(tag: String? = nil, _ parsers: Parser...) -> GenericParser<Self, Parser.Symbol> where
         Parser.Core == Self
     {
         return oneOf(tag: tag, parsers)
     }
 
-    static func oneOf<Parser: ParserProtocol>(tag: String? = nil, _ parsers: [Parser]) -> GenericParser<Self, Parser.Symbol> where
+    static func oneOf<Parser: SomeParser>(tag: String? = nil, _ parsers: [Parser]) -> GenericParser<Self, Parser.Symbol> where
         Parser.Core == Self
     {
         return GenericParser(tag: tag) { _, core in
@@ -79,7 +79,8 @@ public extension ParserCoreProtocol {
             var expectation: Mismatch.Expectation?
             if parsers.flatMap({ $0.tag }).count > 0 {
                 let alternatives = parsers
-                    .map { $0.tag.unwrappedDescription }
+                    .map { $0.tag.someDescription
+                    }
                     .joined(separator: " or ")
                 expectation = .serializedExpectation(alternatives)
             }
@@ -88,7 +89,7 @@ public extension ParserCoreProtocol {
     }
 }
 
-public extension ParserCoreProtocol {
+public extension SomeCore {
 
     static func end() -> GenericParser<Self, ()> {
         return GenericParser<Self, ()> { _, core in
@@ -115,7 +116,7 @@ public extension ParserCoreProtocol {
     }
 }
 
-public extension ParserCoreProtocol where
+public extension SomeCore where
     Source.SubSequence.Element: Equatable
 {
     static func string(
@@ -132,7 +133,7 @@ public extension ParserCoreProtocol where
     }
 }
 
-public extension ParserCoreProtocol where
+public extension SomeCore where
     Source == String
 {
     static func string(tag: String? = nil, regex: RegEx) -> GenericParser<Self, (String, [String])> {

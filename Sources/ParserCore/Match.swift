@@ -1,4 +1,4 @@
-public protocol MatchRepresenting {
+public protocol SomeMatch {
 
     associatedtype Symbol
 
@@ -6,7 +6,7 @@ public protocol MatchRepresenting {
     var length: Int { get }
 }
 
-public struct Match<Symbol>: MatchRepresenting {
+public struct Match<Symbol>: SomeMatch {
 
     public let symbol: Symbol
     public let length: Int
@@ -17,7 +17,7 @@ public struct Match<Symbol>: MatchRepresenting {
     }
 }
 
-struct AnyMatch: MatchRepresenting {
+struct AnyMatch: SomeMatch {
 
     typealias Symbol = Any
 
@@ -31,7 +31,7 @@ struct AnyMatch: MatchRepresenting {
         return (symbol as? T).map { Match(symbol: $0, length: length) }
     }
 
-    init<T: MatchRepresenting>(_ match: T) {
+    init<T: SomeMatch>(_ match: T) {
         self.match = Match(symbol: match.symbol, length: match.length)
         self.symbolType = T.Symbol.self
     }
@@ -40,7 +40,7 @@ struct AnyMatch: MatchRepresenting {
     private let symbolType: Any.Type
 }
 
-struct AnyMatchResult: EitherRepresenting {
+struct AnyMatchResult: SomeEither {
 
     typealias Left = Mismatch
     typealias Right = AnyMatch
@@ -56,9 +56,9 @@ struct AnyMatchResult: EitherRepresenting {
         return result.iif(right: { $0.cast().map(Either.right) }, left: Either.left)
     }
 
-    init<Result: EitherRepresenting>(_ result: Result) where
+    init<Result: SomeEither>(_ result: Result) where
         Result.Left == Mismatch,
-        Result.Right: MatchRepresenting
+        Result.Right: SomeMatch
     {
         self.result = result.map { AnyMatch($0) }
         self.symbolType = Result.Right.Symbol.self
