@@ -1,6 +1,6 @@
 final class DepthLimiter {
 
-    private var depthMap = Dictionary<AnyHashable, Int>()
+    private var depthMap = [AnyHashable: Int]()
 
     func limitDepth<Key: Hashable, T>(key: Key, limit: Int, _ f: () -> T) -> T? {
         let depth = depthMap[key] ?? 0
