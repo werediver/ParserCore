@@ -81,7 +81,7 @@ public final class GenericCore<_Source: Collection>: SomeCore where
     public var farthestFailure: (position: Source.Index, failures: [(trace: String, mismatch: Mismatch)])?
 
     private func wrap<Key: Hashable, Symbol>(key: Key?, _ f: () -> Either<Mismatch, Match<Symbol>>) -> Either<Mismatch, Match<Symbol>> {
-        return depthLimiter.limitDepth(key: key, limit: source.count - offset(position), {
+        return depthLimiter.limitDepth(key: key, limit: source.distance(from: position, to: source.endIndex), {
                     memoizer.memoize(key: key, context: self, {
                             AnyMatchResult(f())
                         })
