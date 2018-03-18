@@ -1,24 +1,46 @@
-public protocol SomeCore: class {
+/*
 
-    associatedtype Source: Collection where Source.SubSequence: Collection
+[+] Flexible `accept(_:)`
+[+] `parse(_:)`
+    [+] Backtracking
+    [+] Farthest failure tracking
+        [ ] Deduplicate output
+    [+] Left recursion accomodation
+        [+] Depth limiting
+            [ ] Tail length overestimating heuristic
+        [+] Caching
+
+*/
+
+public protocol SomeCore {
+
+    associatedtype Source: Collection
+    typealias Match<Symbol> = GenericMatch<Symbol, Source.Index>
 
     func accept<Symbol>(_ body: (Source.SubSequence) -> Match<Symbol>?) -> Symbol?
-
-    func parse<P: SomeParser>(_ parser: P) -> P.Result where P.Core == Self
+    func parse<Parser: SomeParser>(_ parser: Parser) -> Parser.Match where Parser.Core == Self
 }
 
-public final class GenericCore<_Source: Collection>: SomeCore where
-    _Source.SubSequence: Collection,
-    _Source.IndexDistance == Int // TODO: Consider dropping this constraint.
+public final class Core<_Source: Collection>: SomeCore where
+    _Source.IndexDistance == Int
 {
     public typealias Source = _Source
 
     private let source: Source
     private var position: Source.Index
 
-    private func offset(_ index: Source.Index) -> Source.IndexDistance {
-        return source.distance(from: source.startIndex, to: index)
-    }
+    public private(set) lazy var tracer = DepthLimiter(
+            sourceLength: source.count,
+            tailLength: { [source] position in source.distance(from: position, to: source.endIndex) }
+        )
+        .combine(
+            with: Memoizer(delegate: self)
+        )
+        .combine(
+            with: FarthestMismatchTracer(
+                offset: { [source] position in source.distance(from: source.startIndex, to: position) }
+            )
+        )
 
     public init(source: Source) {
         self.source = source
@@ -27,88 +49,49 @@ public final class GenericCore<_Source: Collection>: SomeCore where
 
     public func accept<Symbol>(_ body: (Source.SubSequence) -> Match<Symbol>?) -> Symbol? {
         let tail = source.suffix(from: position)
+
         if let match = body(tail) {
-            source.formIndex(&position, offsetBy: match.length)
+            position = match.range.upperBound
             return match.symbol
         }
+
         return nil
     }
 
-    public func parse<P: SomeParser>(_ parser: P) -> P.Result where
-        P.Core == GenericCore
-    {
+    public func parse<Parser: SomeParser>(_ parser: Parser) -> Parser.Match where Parser.Core == Core {
         let startPosition = position
-        let key = parser.tag.map { Key(offset: offset(position), tag: $0) }
-        let result = wrap(key: key) { () -> Either<Mismatch, Match<P.Symbol>> in
-            stack.append((startPosition, parser.tag))
-            defer { stack.removeLast() }
-            //if let _ = parser.tag { print(trace) }
-            return parser.parse(self)
-                .map { symbol in
-                    Match(symbol: symbol, length: source.distance(from: startPosition, to: position))
-                }
+
+        let match = tracer.trace(position: position, tag: parser.tag) {
+            parser.parse(core: self)
+                .map { symbol in Match(symbol: symbol, range: startPosition ..< position) }
         }
 
-        if case let .left(mismatch) = result {
-        //if case .left = result {
-            if farthestFailure?.position ?? source.startIndex < position {
-                farthestFailure = (position, [(trace, mismatch)])
-            } else if farthestFailure?.position ?? source.startIndex == position {
-                farthestFailure = (position, (farthestFailure?.failures ?? []) + [(trace, mismatch)])
-            }
-
+        if case .left = match {
             position = startPosition
-            //print("\(offset(position)): \(error)")
-        } else if case .right = result {
-            if farthestFailure?.position ?? source.startIndex < position {
-                farthestFailure = nil
-            }
         }
 
-        return result.map { match in match.symbol }
+        return match
+            .map { match in match.symbol }
     }
+}
 
-    // TODO: Consider "compressing" the stack in case of left recursion (add `depth: Int` field).
-    private var stack: [(startPosition: Source.Index, tag: String?)] = []
-    private var trace: String {
-        return stack
-            .reversed()
-            .filter { $0.tag != nil }
-            .map { "\(offset($0.startPosition)):\($0.tag.someDescription)" }
-            .joined(separator: " ◂ ")
-    }
+extension Core: MemoizerDelegate {
 
-    public var farthestFailure: (position: Source.Index, failures: [(trace: String, mismatch: Mismatch)])?
+    public typealias Index = Source.Index
 
-    private func wrap<Key: Hashable, Symbol>(key: Key?, _ f: () -> Either<Mismatch, Match<Symbol>>) -> Either<Mismatch, Match<Symbol>> {
-        return depthLimiter.limitDepth(key: key, limit: source.distance(from: position, to: source.endIndex), {
-                    memoizer.memoize(key: key, context: self, {
-                            AnyMatchResult(f())
-                        })
-                        .cast()
-                    ??  .left(Mismatch(message: trace + " Type cast error"))
-                })
-            ??  .left(Mismatch(message: trace + " Depth cut-off"))
-    }
-
-    private let memoizer = Memoizer<GenericCore, AnyMatchResult>(
-        shouldUpdate: { cached, candidate -> Bool in
-            if let candidateMatch = candidate.right {
-                if let cachedMatch = cached.right {
-                    return candidateMatch.length > cachedMatch.length
-                }
-                return true
+    public func memoizer(shouldUpdate cached: Value, with candidate: Value) -> Bool {
+        if case let .right(candidateMatch) = candidate {
+            if case let .right(cachedMatch) = cached {
+                return candidateMatch.range.upperBound > cachedMatch.range.upperBound
             }
-            return false
-        },
-        willReturnFromCache: { context, cached in
-            if  let match = cached.right,
-                let startPosition = context.stack.last?.startPosition
-            {
-                context.position = context.source.index(startPosition, offsetBy: match.length)
-            }
+            return true
         }
-    )
+        return false
+    }
 
-    private let depthLimiter = DepthLimiter()
+    public func memoizer(willReturnCached value: Value) {
+        if case let .right(match) = value {
+            position = match.range.upperBound
+        }
+    }
 }

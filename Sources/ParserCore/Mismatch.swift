@@ -14,20 +14,20 @@ extension Mismatch: CustomStringConvertible {
 public extension Mismatch {
 
     enum Expectation: CustomStringConvertible {
-        case expectation(Any)
-        case serializedExpectation(String)
+        case object(Any)
+        case text(String)
 
         public var description: String {
             switch self {
-            case let .expectation(some):
+            case let .object(some):
                 return String(reflecting: some)
-            case let .serializedExpectation(some):
-                return String(describing: some)
+            case let .text(some):
+                return some
             }
         }
     }
 
-    init(tag: String?, _ expectation: Expectation? = nil) {
+    init(tag: String?, expectation: Expectation? = nil) {
         switch (tag, expectation) {
         case let (.some(tag), .some(expectation)):
             self.message = "Cannot parse \(tag): expected \(expectation)"

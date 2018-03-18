@@ -79,12 +79,11 @@ public extension SomeCore {
             var expectation: Mismatch.Expectation?
             if parsers.flatMap({ $0.tag }).count > 0 {
                 let alternatives = parsers
-                    .map { $0.tag.someDescription
-                    }
+                    .map { describe($0.tag) }
                     .joined(separator: " or ")
-                expectation = .serializedExpectation(alternatives)
+                expectation = .text(alternatives)
             }
-            return .left(Mismatch(tag: tag, expectation))
+            return .left(Mismatch(tag: tag, expectation: expectation))
         }
     }
 }
@@ -94,13 +93,17 @@ public extension SomeCore {
     static func end() -> GenericParser<Self, ()> {
         return GenericParser<Self, ()> { _, core in
             core.accept { tail -> Match<()>? in
-                    return tail.count == 0 ? Match(symbol: (), length: 0) : nil
+                    tail.startIndex == tail.endIndex ? Match(symbol: (), range: tail.startIndex ..< tail.endIndex) : nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: nil, .serializedExpectation("end of input")))
+            ??  .left(Mismatch(tag: nil, expectation: .text("end of input")))
         }
     }
+}
 
+extension SomeCore where
+    Source.SubSequence: Collection
+{
     static func string(
         tag: String? = nil,
         while predicate: @escaping (Source.SubSequence.Element) -> Bool
@@ -108,7 +111,7 @@ public extension SomeCore {
         return GenericParser(tag: tag) { _, core in
             core.accept { tail -> Match<Source.SubSequence>? in
                     let match = tail.prefix(while: predicate)
-                    return match.count > 0 ? Match(symbol: match, length: match.count) : nil
+                    return match.count > 0 ? Match(symbol: match, range: match.startIndex ..< match.endIndex) : nil
                 }
                 .map(Either.right)
             ??  .left(Mismatch(tag: tag))
@@ -117,6 +120,8 @@ public extension SomeCore {
 }
 
 public extension SomeCore where
+    Source.SubSequence: Collection,
+    Source.SubSequence.IndexDistance == Source.IndexDistance,
     Source.SubSequence.Element: Equatable
 {
     static func string(
@@ -125,10 +130,10 @@ public extension SomeCore where
     ) -> GenericParser<Self, Source.SubSequence> {
         return GenericParser(tag: tag) { _, core in
             core.accept { tail -> Match<Source.SubSequence>? in
-                    tail.starts(with: pattern) ? Match(symbol: pattern, length: pattern.count) : nil
+                    tail.starts(with: pattern) ? Match(symbol: pattern, range: tail.startIndex ..< tail.index(tail.startIndex, offsetBy: pattern.count)) : nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: tag, .expectation(pattern)))
+            ??  .left(Mismatch(tag: tag, expectation: .object(pattern)))
         }
     }
 }
@@ -140,10 +145,10 @@ public extension SomeCore where
         return GenericParser(tag: tag) { _, core in
             core.accept { tail -> Match<(String, [String])>? in
                     regex.firstMatch(in: String(tail), options: .anchored)
-                        .map { Match(symbol: ($0.firstGroup, Array($0.groups.dropFirst())), length: $0.firstGroup.count) }
+                        .map { Match(symbol: ($0.firstGroup, Array($0.groups.dropFirst())), range: tail.startIndex ..< tail.index(tail.startIndex, offsetBy: $0.firstGroup.count)) }
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: tag, .serializedExpectation("text matching regular expression \(regex)")))
+            ??  .left(Mismatch(tag: tag, expectation: .text("text matching regular expression \(regex)")))
         }
     }
 
