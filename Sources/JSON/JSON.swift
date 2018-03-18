@@ -1,5 +1,5 @@
 import Foundation
-import ParserCore
+import ParserCore2
 
 public enum JSON {
 

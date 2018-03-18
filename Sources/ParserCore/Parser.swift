@@ -25,6 +25,13 @@ public extension SomeParser {
         }
     }
 
+    func mapError(tag: String? = nil, _ transform: @escaping (Mismatch) -> Mismatch) -> GenericParser<Core, Symbol> {
+        return GenericParser(tag: tag) { _, core in
+            core.parse(self)
+                .mapLeft(transform)
+        }
+    }
+
     func flatMap<P: SomeParser>(tag: String? = nil, _ transform: @escaping (Symbol) -> P) -> GenericParser<Core, P.Symbol> where
         P.Core == Core
     {
@@ -34,13 +41,6 @@ public extension SomeParser {
                     right: { symbol in core.parse(transform(symbol)) },
                     left: Either.left
                 )
-        }
-    }
-
-    func mapError(tag: String? = nil, _ transform: @escaping (Mismatch) -> Mismatch) -> GenericParser<Core, Symbol> {
-        return GenericParser(tag: tag) { _, core in
-            core.parse(self)
-                .mapLeft(transform)
         }
     }
 }

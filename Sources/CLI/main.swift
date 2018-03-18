@@ -1,12 +1,15 @@
 import Foundation
-import ParserCore
+import ParserCore2
 import JSON
 
-//let source = "1+2"
-//print(source)
-//let core = GenericParserCore(source: source)
-//let result = core.parse(LSumParser.start())
-//dump(result)
+//do {
+//    let source = "1+2"
+//    print(source)
+//    let core = Core(source: source)
+//    let result = core.parse(LSumParser.start())
+//    dump(result)
+//    exit(0)
+//}
 
 enum ExitCode {
     static let inputAccepted: Int32 = 0
@@ -29,11 +32,12 @@ default:
 guard let input = String(data: file.readDataToEndOfFile(), encoding: .utf8)
 else { exit(ExitCode.failure) }
 
+var core: Core<String>?
 var result: Either<Mismatch, JSON>?
 
 let stats = benchmark {
-    let core = GenericCore(source: input)
-    result = core.parse(JSONParser.start())
+    core = Core(source: input)
+    result = core?.parse(JSONParser.start())
 }
 print("Stats:\n  avg. user time: \(stats.avgUserTime) s\n  avg. sys  time: \(stats.avgSysTime) s")
 
@@ -53,6 +57,9 @@ if case .right? = result {
     print("ACCEPTED")
     exit(ExitCode.inputAccepted)
 } else {
+    if let report = core?.tracer.report() {
+        print(report)
+    }
     print("REJECTED")
     exit(ExitCode.inputRejected)
 }

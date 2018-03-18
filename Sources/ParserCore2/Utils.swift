@@ -1,18 +1,22 @@
-extension String {
-
-    init<T>(optional: T?) {
-        if let some = optional {
-            self.init(describing: some)
-        } else {
-            self.init(describing: optional)
-        }
-    }
+func describe<T>(_ some: T?) -> String {
+    return some.map(String.init(describing:)) ?? String(describing: some)
 }
 
-func id<T>(_ some: T) -> T {
+public func id<T>(_ some: T) -> T {
     return some
 }
 
-func const<T>(_ some: T) -> (Any) -> T {
+public func const<T>(_ some: T) -> (Any) -> T {
     return { _ in some }
+}
+
+public func const<T>(_ some: T) -> (Any, Any) -> T {
+    return { _, _ in some }
+}
+
+extension Collection {
+
+    subscript(safe index: Index) -> Element? {
+        return (startIndex ..< endIndex).contains(index) ? self[index] : nil
+    }
 }
