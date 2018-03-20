@@ -40,3 +40,12 @@ public final class CompositeTracer<Tracer1: Tracing, Tracer2: Tracing>: Tracing 
             .joined(separator: "\n\n")
     }
 }
+
+public final class EmptyTracer<Index: Comparable>: Tracing {
+
+    public func trace<Symbol>(position: Index, tag: String?, call body: () -> Either<Mismatch, GenericMatch<Symbol, Index>>) -> Either<Mismatch, GenericMatch<Symbol, Index>> {
+        return body()
+    }
+
+    public func report() -> String? { return nil }
+}

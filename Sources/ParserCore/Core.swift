@@ -7,7 +7,7 @@
         [ ] Deduplicate output
     [+] Left recursion accomodation
         [+] Depth limiting
-            [ ] Tail length overestimating heuristic
+            [+] Tail length overestimating heuristic
         [+] Caching
 
 */
@@ -25,13 +25,19 @@ public final class Core<_Source: Collection>: SomeCore where
     _Source.IndexDistance == Int
 {
     public typealias Source = _Source
+    public typealias OverestimatedCount = (Source.SubSequence) -> Source.IndexDistance
 
     private let source: Source
     private var position: Source.Index
+    private let overestimatedCount: OverestimatedCount
 
-    public private(set) lazy var tracer = DepthLimiter(
-            sourceLength: source.count,
-            tailLength: { [source] position in source.distance(from: position, to: source.endIndex) }
+    public private(set) lazy var tracer = EmptyTracer<Source.Index>()
+        .combine(with: DepthLimiter(
+                sourceLength: overestimatedCount(source.suffix(from: source.startIndex)),
+                tailLength: { [source, overestimatedCount] position in
+                    overestimatedCount(source.suffix(from: position))
+                }
+            )
         )
         .combine(
             with: Memoizer(delegate: self)
@@ -42,9 +48,12 @@ public final class Core<_Source: Collection>: SomeCore where
             )
         )
 
-    public init(source: Source) {
+    public init(source: Source, overestimatedCount: OverestimatedCount? = nil) {
         self.source = source
         self.position = source.startIndex
+        self.overestimatedCount = overestimatedCount ?? { [source] subsequence in
+            source.distance(from: subsequence.startIndex, to: subsequence.endIndex)
+        }
     }
 
     public func accept<Symbol>(_ body: (Source.SubSequence) -> Match<Symbol>?) -> Symbol? {
@@ -93,5 +102,14 @@ extension Core: MemoizerDelegate {
         if case let .right(match) = value {
             position = match.range.upperBound
         }
+    }
+}
+
+public extension Core where
+    Source == String
+{
+
+    convenience init(source: Source) {
+        self.init(source: source, overestimatedCount: { substring in substring.utf16.count })
     }
 }
