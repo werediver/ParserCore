@@ -88,12 +88,41 @@ public extension SomeCore {
     }
 }
 
+public extension SomeCore where
+    Source.SubSequence: Collection,
+    Source.SubSequence.Element: Equatable
+{
+
+    static func oneOf(tag: String? = nil, _ alternatives: [Source.SubSequence.Element]) -> GenericParser<Self, Source.SubSequence.Element> {
+        return GenericParser(tag: tag) { _, core in
+            core.accept { tail -> Match<Source.SubSequence.Element>? in
+                    if let element = tail.first, alternatives.contains(element) {
+                        return Match(symbol: element, range: tail.startIndex ..< tail.index(after: tail.startIndex))
+                    }
+                    return nil
+                }
+                .map(Either.right)
+            ??  .left(Mismatch(
+                    tag: tag,
+                    expectation: Mismatch.Expectation.text(
+                        alternatives
+                            .map(String.init(describing:))
+                            .joined(separator: " or ")
+                    )
+                ))
+        }
+    }
+}
+
 public extension SomeCore {
 
     static func end() -> GenericParser<Self, ()> {
         return GenericParser<Self, ()> { _, core in
             core.accept { tail -> Match<()>? in
-                    tail.startIndex == tail.endIndex ? Match(symbol: (), range: tail.startIndex ..< tail.endIndex) : nil
+                    if tail.startIndex == tail.endIndex {
+                        return Match(symbol: (), range: tail.startIndex ..< tail.endIndex)
+                    }
+                    return nil
                 }
                 .map(Either.right)
             ??  .left(Mismatch(tag: nil, expectation: .text("end of input")))
@@ -101,7 +130,7 @@ public extension SomeCore {
     }
 }
 
-extension SomeCore where
+public extension SomeCore where
     Source.SubSequence: Collection
 {
     static func string(
@@ -121,6 +150,37 @@ extension SomeCore where
 
 public extension SomeCore where
     Source.SubSequence: Collection,
+    Source.SubSequence.IndexDistance == Int
+{
+    static func string(
+        tag: String? = nil,
+        while predicate: @escaping (Source.SubSequence.Element) -> Bool,
+        count limit: CountLimit = .atLeast(1)
+    ) -> GenericParser<Self, Source.SubSequence> {
+        return GenericParser(tag: tag) { _, core in
+            core.accept { tail -> Match<Source.SubSequence>? in
+                    var count = 0
+                    let match = tail.prefix(while: { element in
+                        if limit.extends(past: count) && predicate(element) {
+                            count += 1
+                            return true
+                        }
+                        return false
+                    })
+
+                    if limit.contains(match.count) {
+                        return Match(symbol: match, range: match.startIndex ..< match.endIndex)
+                    }
+                    return nil
+                }
+                .map(Either.right)
+            ??  .left(Mismatch(tag: tag))
+        }
+    }
+}
+
+public extension SomeCore where
+    Source.SubSequence: Collection,
     Source.SubSequence.IndexDistance == Source.IndexDistance,
     Source.SubSequence.Element: Equatable
 {
@@ -130,7 +190,10 @@ public extension SomeCore where
     ) -> GenericParser<Self, Source.SubSequence> {
         return GenericParser(tag: tag) { _, core in
             core.accept { tail -> Match<Source.SubSequence>? in
-                    tail.starts(with: pattern) ? Match(symbol: pattern, range: tail.startIndex ..< tail.index(tail.startIndex, offsetBy: pattern.count)) : nil
+                    if tail.starts(with: pattern) {
+                        return Match(symbol: pattern, range: tail.startIndex ..< tail.index(tail.startIndex, offsetBy: pattern.count))
+                    }
+                    return nil
                 }
                 .map(Either.right)
             ??  .left(Mismatch(tag: tag, expectation: .object(pattern)))
@@ -152,8 +215,12 @@ public extension SomeCore where
         }
     }
 
-    static func string(tag: String? = nil, charset: CharacterSet) -> GenericParser<Self, String> {
-        return string(tag: tag, while: charset.contains).map(String.init)
+    static func string(
+        tag: String? = nil,
+        charset: CharacterSet,
+        count limit: CountLimit = .atLeast(1)
+    ) -> GenericParser<Self, String> {
+        return string(tag: tag, while: charset.contains, count: limit).map(String.init)
     }
 }
 
