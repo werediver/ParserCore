@@ -9,15 +9,16 @@ public struct RegEx {
         public var firstGroup: String! { return groups.first }
 
         public init(_ result: NSTextCheckingResult, in src: String) {
-            self.ranges = (0 ..< result.numberOfRanges).flatMap { Range(result.range(at: $0), in: src) }
-            self.groups = ranges.map { String(src[$0]) }
+            self.ranges = (0 ..< result.numberOfRanges)
+                .flatMap { index in Range(result.range(at: index), in: src) }
+            self.groups = ranges.map { range in String(src[range]) }
         }
     }
 
     public let regex: NSRegularExpression
 
-    public init(_ pattern: String, options: NSRegularExpression.Options = []) {
-        regex = try! NSRegularExpression(pattern: pattern, options: options)
+    public init(_ pattern: String, options: NSRegularExpression.Options = []) throws {
+        regex = try NSRegularExpression(pattern: pattern, options: options)
     }
 
     public func enumerateMatches(in text: String, options: NSRegularExpression.MatchingOptions = [], range: Range<String.Index>? = nil, body: (Result?, NSRegularExpression.MatchingFlags) -> Bool) {
@@ -76,6 +77,11 @@ extension RegEx: Equatable {
     }
 }
 
+extension RegEx: Hashable {
+
+    public var hashValue: Int { return regex.hashValue }
+}
+
 public func ~=(pattern: RegEx, value: String) -> Bool {
     return pattern.firstMatch(in: value) != nil
 }
@@ -83,15 +89,15 @@ public func ~=(pattern: RegEx, value: String) -> Bool {
 extension RegEx: ExpressibleByStringLiteral {
 
     public init(stringLiteral value: StringLiteralType) {
-        self.init(value)
+        try! self.init(value)
     }
 
     public init(extendedGraphemeClusterLiteral value: StringLiteralType) {
-        self.init(value)
+        try! self.init(value)
     }
 
     public init(unicodeScalarLiteral value: StringLiteralType) {
-        self.init(value)
+        try! self.init(value)
     }
 }
 
