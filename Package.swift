@@ -6,12 +6,17 @@ let package = Package(
     name: "ParserCore",
     products: [
         .library(name: "ParserCore", targets: ["ParserCore"]),
+        .library(name: "RegEx", targets: ["RegEx"]),
         .library(name: "JSON", targets: ["JSON"]),
         .executable(name: "CLI", targets: ["CLI"])
     ],
     targets: [
         .target(
-            name: "ParserCore"
+            name: "ParserCore",
+            dependencies: ["RegEx"]
+        ),
+        .target(
+            name: "RegEx"
         ),
         .target(
             name: "JSON",

@@ -1,5 +1,6 @@
 import Foundation
 import ParserCore
+import RegEx
 
 public enum JSON {
 

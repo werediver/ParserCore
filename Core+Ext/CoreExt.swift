@@ -1,5 +1,3 @@
-import Foundation
-
 public extension SomeCore {
 
     static func empty(tag: String? = nil) -> GenericParser<Self, ()> {
@@ -198,40 +196,5 @@ public extension SomeCore where
                 .map(Either.right)
             ??  .left(Mismatch(tag: tag, expectation: .object(pattern)))
         }
-    }
-}
-
-public extension SomeCore where
-    Source == String
-{
-    static func string(tag: String? = nil, regex: RegEx) -> GenericParser<Self, (String, [String])> {
-        return GenericParser(tag: tag) { _, core in
-            core.accept { tail -> Match<(String, [String])>? in
-                    regex.firstMatch(in: String(tail), options: .anchored)
-                        .map { Match(symbol: ($0.firstGroup, Array($0.groups.dropFirst())), range: tail.startIndex ..< tail.index(tail.startIndex, offsetBy: $0.firstGroup.count)) }
-                }
-                .map(Either.right)
-            ??  .left(Mismatch(tag: tag, expectation: .text("text matching regular expression \(regex)")))
-        }
-    }
-
-    static func string(
-        tag: String? = nil,
-        charset: CharacterSet,
-        count limit: CountLimit = .atLeast(1)
-    ) -> GenericParser<Self, String> {
-        return string(tag: tag, while: charset.contains, count: limit).map(String.init)
-    }
-}
-
-private extension CharacterSet {
-
-    func contains(_ c: Character) -> Bool {
-        for scalar in String(c).unicodeScalars {
-            if !self.contains(scalar) {
-                return false
-            }
-        }
-        return true
     }
 }
