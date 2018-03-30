@@ -1,8 +1,9 @@
-# Parser Core
+# ParserCore
 
-A simple yet powerful parser framework written in Swift language.
+## Building
 
-## Motivation
+ParserCore framework requires full-module-optimization, otherwise it cannot be build (at least with Swift 4.0 compiler).
 
-## License
-[MIT](LICENSE.md)
+```
+$ swift build -c release
+```
