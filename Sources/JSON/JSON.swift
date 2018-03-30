@@ -96,84 +96,6 @@ public enum JSONParser<Core: SomeCore> where
                 }
     }
 
-    static func _numberLiteral() -> Parser<Double> {
-        let numberRegEx = try! RegEx.make("-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?")
-
-        return leadingWhitespace <|
-            tag("NUMBER") <|
-            Core.string(regex: numberRegEx)
-                .attemptMap { firstGroup, _ in
-                    Double(firstGroup)
-                        .map(Either.right)
-                    ??  .left(Mismatch(message: "Cannot create a number from text \"\(firstGroup)\""))
-                }
-    }
-
-    static func numberLiteral() -> Parser<Double> {
-        return leadingWhitespace <|
-            tag("NUMBER") <|
-            Core.maybe(
-                    Core.string("-")
-                        .map(String.init)
-                )
-                .flatMap { (minus: String?) -> Parser<String> in
-                    Core.oneOf(
-                            Core.string("0").map(String.init),
-                            Core.string(charset: Charset.nonZeroDigits, count: .exactly(1))
-                                .flatMap { (firstDigit: String) -> Parser<String> in
-                                    Core.string(charset: Charset.digits, count: .atLeast(0))
-                                        .map { restDigits in firstDigit + restDigits }
-                                }
-                                .map(String.init)
-                        )
-                        .flatMap { (naturalPart: String) -> Parser<String> in
-                            Core.maybe(
-                                Core.string(".")
-                                    .map(String.init)
-                                    .flatMap { (decimalSeparator: String) -> Parser<String> in
-                                        Core.string(charset: Charset.digits, count: .atLeast(1))
-                                            .map { fractionalPart in
-                                                [decimalSeparator, fractionalPart]
-                                                    .joined()
-                                            }
-                                    }
-                                )
-                                .flatMap { (dotFractionalPart: String?) -> Parser<String> in
-                                    Core.maybe(
-                                            Core.maybe(
-                                                    Core.oneOf([Character("e"), Character("E")])
-                                                        .map(String.init)
-                                                )
-                                                .flatMap { (e: String?) -> Parser<String> in
-                                                    Core.maybe(
-                                                        Core.oneOf([Character("-"), Character("+")])
-                                                            .map(String.init)
-                                                    )
-                                                    .flatMap { (sign: String?) in
-                                                        Core.string(charset: Charset.digits, count: .atLeast(1))
-                                                            .map { (exp: String) -> String in
-                                                                [e, sign, exp]
-                                                                    .flatMap(id)
-                                                                    .joined()
-                                                            }
-                                                    }
-                                                }
-                                        )
-                                        .map { (eSignExp: String?) -> String in
-                                            [minus, naturalPart, dotFractionalPart, eSignExp]
-                                                .flatMap(id)
-                                                .joined()
-                                        }
-                                }
-                        }
-                }
-                .attemptMap { text -> Either<Mismatch, Double> in
-                    Double(text)
-                        .map(Either.right)
-                    ??  .left(Mismatch(tag: "NUMBER", expectation: .text("double precision floating point number")))
-                }
-    }
-
     static func stringLiteral() -> Parser<String> {
         return leadingWhitespace <|
             tag("STRING") <|
@@ -248,8 +170,10 @@ public enum JSONParser<Core: SomeCore> where
 
 enum Charset {
     static let whitespace = CharacterSet(charactersIn: "\t\n\r ")
-    static let nonZeroDigits = CharacterSet(charactersIn: "123456789")
-    static let digits = CharacterSet(charactersIn: "0").union(nonZeroDigits)
+    static let digits = CharacterSet.decimalDigits
+    static let nonZeroDigits = CharacterSet
+        .decimalDigits
+        .subtracting(CharacterSet(charactersIn: "0"))
     static let stringUnescapedCharacters =
         CharacterSet(charactersIn: UnicodeScalar(0) ... UnicodeScalar(0x1F))
         .union(CharacterSet(charactersIn: "\"\\"))
