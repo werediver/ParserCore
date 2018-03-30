@@ -10,7 +10,7 @@ public struct RegEx {
 
         public init(_ result: NSTextCheckingResult, in src: String) {
             self.ranges = (0 ..< result.numberOfRanges)
-                .flatMap { index in Range(result.range(at: index), in: src) }
+                .compactMap { index in Range(result.range(at: index), in: src) }
             self.groups = ranges.map { range in String(src[range]) }
         }
     }

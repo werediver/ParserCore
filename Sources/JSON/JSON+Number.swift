@@ -25,7 +25,7 @@ extension JSONParser {
                     decimalDigits
                         .map { (exp: String) -> String in
                             [e, sign, exp]
-                                .flatMap(id)
+                                .compactMap(id)
                                 .joined()
                         }
                 }
@@ -51,7 +51,7 @@ extension JSONParser {
                                     Core.maybe(decimalExponent)
                                         .map { (exponent: String?) -> String in
                                             [minus, naturalPart, dotFractionalPart, exponent]
-                                                .flatMap(id)
+                                                .compactMap(id)
                                                 .joined()
                                         }
                                 }

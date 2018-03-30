@@ -75,7 +75,7 @@ public extension SomeCore {
             }
 
             var expectation: Mismatch.Expectation?
-            if parsers.flatMap({ $0.tag }).count > 0 {
+            if parsers.compactMap({ $0.tag }).count > 0 {
                 let alternatives = parsers
                     .map { describe($0.tag) }
                     .joined(separator: " or ")
@@ -147,8 +147,7 @@ public extension SomeCore where
 }
 
 public extension SomeCore where
-    Source.SubSequence: Collection,
-    Source.SubSequence.IndexDistance == Int
+    Source.SubSequence: Collection
 {
     static func string(
         tag: String? = nil,
@@ -179,7 +178,6 @@ public extension SomeCore where
 
 public extension SomeCore where
     Source.SubSequence: Collection,
-    Source.SubSequence.IndexDistance == Source.IndexDistance,
     Source.SubSequence.Element: Equatable
 {
     static func string(

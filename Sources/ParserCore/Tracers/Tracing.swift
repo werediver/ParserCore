@@ -36,7 +36,7 @@ public final class CompositeTracer<Tracer1: Tracing, Tracer2: Tracing>: Tracing 
 
     public func report() -> String? {
         return [tracer1.report(), tracer2.report()]
-            .flatMap(id)
+            .compactMap(id)
             .joined(separator: "\n\n")
     }
 }
