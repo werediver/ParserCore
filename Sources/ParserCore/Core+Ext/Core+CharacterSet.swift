@@ -8,14 +8,14 @@ public extension SomeCore where
         charset: CharacterSet,
         count limit: CountLimit = .atLeast(1)
     ) -> GenericParser<Self, String> {
-        return string(tag: tag, while: charset.contains, count: limit).map(String.init)
+        return subseq(tag: tag, while: charset.contains, count: limit).map(String.init)
     }
 }
 
 private extension CharacterSet {
 
     func contains(_ c: Character) -> Bool {
-        for scalar in String(c).unicodeScalars {
+        for scalar in c.unicodeScalars {
             if !self.contains(scalar) {
                 return false
             }

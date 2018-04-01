@@ -30,3 +30,17 @@ public enum CountLimit {
         }
     }
 }
+
+extension CountLimit: CustomStringConvertible {
+
+    public var description: String {
+        switch self {
+        case let .atLeast(atLeast):
+            return "at least \(atLeast)"
+        case let .atMost(atMost):
+            return "at most \(atMost)"
+        case let .times(atLeast, atMost):
+            return atLeast != atMost ? "\(atLeast) to \(atMost)" : "exactly \(atLeast)"
+        }
+    }
+}

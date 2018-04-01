@@ -5,13 +5,13 @@ extension JSONParser {
 
     static func numberLiteral() -> Parser<Double> {
 
-        let minus = Core.string("-").map(String.init)
+        let minus = Core.subseq("-").map(String.init)
         let sign  = Core.oneOf(["-", "+"].map(Character.init)).map(String.init)
         let floatingPointE = Core.oneOf(["e", "E"].map(Character.init)).map(String.init)
-        let decimalSeparator = Core.string(".").map(String.init)
+        let decimalSeparator = Core.subseq(".").map(String.init)
         let decimalDigits  = Core.string(charset: Charset.digits, count: .atLeast(1))
         let decimalNumber = Core.oneOf(
-                Core.string("0").map(String.init),
+                Core.subseq("0").map(String.init),
                 Core.string(charset: Charset.nonZeroDigits, count: .exactly(1))
                     .flatMap { (firstDigit: String) -> Parser<String> in
                         Core.string(charset: Charset.digits, count: .atLeast(0))

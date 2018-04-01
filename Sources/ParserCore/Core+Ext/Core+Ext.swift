@@ -4,6 +4,19 @@ public extension SomeCore {
         return GenericParser(tag: tag, const(.right(Void())))
     }
 
+    static func end() -> GenericParser<Self, ()> {
+        return GenericParser<Self, ()> { _, core in
+            core.accept { tail -> Match<()>? in
+                    if tail.startIndex == tail.endIndex {
+                        return Match(symbol: (), range: tail.startIndex ..< tail.endIndex)
+                    }
+                    return nil
+                }
+                .map(Either.right)
+            ??  .left(Mismatch(tag: nil, expectation: .text("end of input")))
+        }
+    }
+
     static func maybe<Parser: SomeParser>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, Parser.Symbol?> where
         Parser.Core == Self
     {
@@ -12,33 +25,28 @@ public extension SomeCore {
         }
     }
 
-    static func many<Parser: SomeParser>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, [Parser.Symbol]> where
+    static func many<Parser: SomeParser>(
+        tag: String? = nil,
+        _ parser: Parser,
+        count limit: CountLimit
+    ) -> GenericParser<Self, [Parser.Symbol]> where
         Parser.Core == Self
     {
         return GenericParser(tag: tag) { _, core in
             var items = [Parser.Symbol]()
-            while let next = core.parse(parser).right {
+            while limit.extends(past: items.count),
+                  let next = core.parse(parser).right {
                 items.append(next)
             }
-            return .right(items)
+
+            if limit.contains(items.count) {
+                return .right(items)
+            }
+            return .left(Mismatch(tag: tag, expectation: parser.tag.map { tag in .text("\(limit) \(tag)") }))
         }
     }
 
-    static func some<Parser: SomeParser>(tag: String? = nil, _ parser: Parser) -> GenericParser<Self, [Parser.Symbol]> where
-        Parser.Core == Self
-    {
-        return GenericParser(tag: tag) { _, core in
-            core.parse(parser)
-                .map { first in
-                    var items = [first]
-                    while let next = core.parse(parser).right {
-                        items.append(next)
-                    }
-                    return items
-                }
-        }
-    }
-
+    // TODO: Optionally allow trailing comma.
     static func list<Item: SomeParser, Separator: SomeParser>(tag: String? = nil, item: Item, separator: Separator) -> GenericParser<Self, [Item.Symbol]> where
         Item.Core == Self,
         Separator.Core == Self
@@ -84,72 +92,8 @@ public extension SomeCore {
             return .left(Mismatch(tag: tag, expectation: expectation))
         }
     }
-}
 
-public extension SomeCore where
-    Source.SubSequence: Collection,
-    Source.SubSequence.Element: Equatable
-{
-
-    static func oneOf(tag: String? = nil, _ alternatives: [Source.SubSequence.Element]) -> GenericParser<Self, Source.SubSequence.Element> {
-        return GenericParser(tag: tag) { _, core in
-            core.accept { tail -> Match<Source.SubSequence.Element>? in
-                    if let element = tail.first, alternatives.contains(element) {
-                        return Match(symbol: element, range: tail.startIndex ..< tail.index(after: tail.startIndex))
-                    }
-                    return nil
-                }
-                .map(Either.right)
-            ??  .left(Mismatch(
-                    tag: tag,
-                    expectation: Mismatch.Expectation.text(
-                        alternatives
-                            .map(String.init(describing:))
-                            .joined(separator: " or ")
-                    )
-                ))
-        }
-    }
-}
-
-public extension SomeCore {
-
-    static func end() -> GenericParser<Self, ()> {
-        return GenericParser<Self, ()> { _, core in
-            core.accept { tail -> Match<()>? in
-                    if tail.startIndex == tail.endIndex {
-                        return Match(symbol: (), range: tail.startIndex ..< tail.endIndex)
-                    }
-                    return nil
-                }
-                .map(Either.right)
-            ??  .left(Mismatch(tag: nil, expectation: .text("end of input")))
-        }
-    }
-}
-
-public extension SomeCore where
-    Source.SubSequence: Collection
-{
-    static func string(
-        tag: String? = nil,
-        while predicate: @escaping (Source.SubSequence.Element) -> Bool
-    ) -> GenericParser<Self, Source.SubSequence> {
-        return GenericParser(tag: tag) { _, core in
-            core.accept { tail -> Match<Source.SubSequence>? in
-                    let match = tail.prefix(while: predicate)
-                    return match.count > 0 ? Match(symbol: match, range: match.startIndex ..< match.endIndex) : nil
-                }
-                .map(Either.right)
-            ??  .left(Mismatch(tag: tag))
-        }
-    }
-}
-
-public extension SomeCore where
-    Source.SubSequence: Collection
-{
-    static func string(
+    static func subseq(
         tag: String? = nil,
         while predicate: @escaping (Source.SubSequence.Element) -> Bool,
         count limit: CountLimit = .atLeast(1)
@@ -177,10 +121,29 @@ public extension SomeCore where
 }
 
 public extension SomeCore where
-    Source.SubSequence: Collection,
     Source.SubSequence.Element: Equatable
 {
-    static func string(
+    static func oneOf(tag: String? = nil, _ alternatives: [Source.SubSequence.Element]) -> GenericParser<Self, Source.SubSequence.Element> {
+        return GenericParser(tag: tag) { _, core in
+            core.accept { tail -> Match<Source.SubSequence.Element>? in
+                    if let element = tail.first, alternatives.contains(element) {
+                        return Match(symbol: element, range: tail.startIndex ..< tail.index(after: tail.startIndex))
+                    }
+                    return nil
+                }
+                .map(Either.right)
+            ??  .left(Mismatch(
+                    tag: tag,
+                    expectation: Mismatch.Expectation.text(
+                        alternatives
+                            .map(String.init(describing:))
+                            .joined(separator: " or ")
+                    )
+                ))
+        }
+    }
+
+    static func subseq(
         tag: String? = nil,
         _ pattern: Source.SubSequence
     ) -> GenericParser<Self, Source.SubSequence> {

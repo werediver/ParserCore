@@ -31,15 +31,15 @@ public enum JSONParser<Core: SomeCore> where
     static func objectLiteral() -> Parser<JSON.Object> {
         return leadingWhitespace <|
             tag("OBJECT") <|
-            Core.string(tag: "OBJECT_START", "{")
+            Core.subseq(tag: "OBJECT_START", "{")
                 .flatMap { _ in
                     Core.list(
                             item: property(),
-                            separator: leadingWhitespace <| Core.string(",")
+                            separator: leadingWhitespace <| Core.subseq(",")
                         )
                         .flatMap { properties in
                             leadingWhitespace <|
-                            Core.string(tag: "OBJECT_END", "}")
+                            Core.subseq(tag: "OBJECT_END", "}")
                                 .map(const(makeObject(with: properties)))
                         }
                 }
@@ -57,7 +57,7 @@ public enum JSONParser<Core: SomeCore> where
             stringLiteral()
                 .flatMap { name in
                     leadingWhitespace <|
-                    Core.string(":")
+                    Core.subseq(":")
                         .flatMap { _ in
                             value()
                                 .map { value in (name, value) }
@@ -68,15 +68,15 @@ public enum JSONParser<Core: SomeCore> where
     static func arrayLiteral() -> Parser<[JSON]> {
         return leadingWhitespace <|
             tag("ARRAY") <|
-            Core.string(tag: "ARRAY_START", "[")
+            Core.subseq(tag: "ARRAY_START", "[")
                 .flatMap { _ in
                     Core.list(
                             item: value(),
-                            separator: leadingWhitespace <| Core.string(",")
+                            separator: leadingWhitespace <| Core.subseq(",")
                         )
                         .flatMap { items in
                             leadingWhitespace <|
-                            Core.string(tag: "ARRAY_END", "]")
+                            Core.subseq(tag: "ARRAY_END", "]")
                                 .map(const(items))
                         }
                 }
@@ -86,16 +86,16 @@ public enum JSONParser<Core: SomeCore> where
         return leadingWhitespace <|
             tag("BOOL") <|
             Core.oneOf(
-                Core.string(tag: "FALSE", "false")
+                Core.subseq(tag: "FALSE", "false")
                     .map(const(false)),
-                Core.string(tag: "TRUE", "true")
+                Core.subseq(tag: "TRUE", "true")
                     .map(const(true))
             )
     }
 
     static func null() -> Parser<JSON> {
         return leadingWhitespace <|
-            Core.string(tag: "NULL", "null")
+            Core.subseq(tag: "NULL", "null")
                 .map(const(JSON.null))
     }
 

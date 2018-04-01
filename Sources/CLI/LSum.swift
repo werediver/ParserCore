@@ -72,7 +72,7 @@ enum LSumParser<Core: SomeCore> where
     }
 
     static func plus() -> Parser<Plus> {
-        return Core.string("+").map(tag: "Plus") { _ in Plus() }
+        return Core.subseq("+").map(tag: "Plus") { _ in Plus() }
     }
 }
 
