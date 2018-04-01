@@ -21,7 +21,9 @@ public protocol SomeCore {
     func parse<Parser: SomeParser>(_ parser: Parser) -> Parser.Match where Parser.Core == Self
 }
 
-public final class Core<_Source: Collection>: SomeCore {
+public final class Core<_Source: Collection>: SomeCore where
+    _Source.Index: Hashable
+{
 
     public typealias Source = _Source
     public typealias OverestimatedCount = (Source.SubSequence) -> Int

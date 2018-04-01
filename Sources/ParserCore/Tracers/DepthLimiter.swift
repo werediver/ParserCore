@@ -1,9 +1,9 @@
-public final class DepthLimiter<Index: Comparable>: Tracing {
+public final class DepthLimiter<Index: Comparable & Hashable>: Tracing {
 
     typealias TailLength = (Index) -> Int
 
     private let tailLength: TailLength
-    private var depthMapMap = IndexDictionary<Index, [String: Int]>() // TODO: Consider using `Ref<[String: Int]>`
+    private var depthMapMap = Dictionary<Index, [String: Int]>() // TODO: Consider using `Ref<[String: Int]>`
 
     init(sourceLength: Int, tailLength: @escaping TailLength) {
         self.tailLength = tailLength

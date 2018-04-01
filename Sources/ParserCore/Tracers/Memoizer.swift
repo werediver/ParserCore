@@ -8,12 +8,12 @@ public protocol MemoizerDelegate: class {
     func memoizer(willReturnCached value: Value)
 }
 
-public final class Memoizer<Index, Delegate: MemoizerDelegate>: Tracing where
+public final class Memoizer<Index: Hashable, Delegate: MemoizerDelegate>: Tracing where
     Delegate.Index == Index
 {
     typealias Value = Either<Mismatch, GenericMatch<Any, Index>>
 
-    private var cache = IndexDictionary<Key<Index>, Value>()
+    private var cache = Dictionary<Key<Index>, Value>()
     private weak var delegate: Delegate?
 
     init(delegate: Delegate) {
@@ -73,7 +73,7 @@ public final class Memoizer<Index, Delegate: MemoizerDelegate>: Tracing where
     }
 }
 
-struct Key<Index: Comparable> {
+struct Key<Index: Hashable> {
     let position: Index
     let tag: String
 }
@@ -86,10 +86,9 @@ extension Key: Equatable {
     }
 }
 
-extension Key: Comparable {
+extension Key: Hashable {
 
-    static func <(lhs: Key, rhs: Key) -> Bool {
-        return lhs.position < rhs.position
-            || lhs.position == rhs.position && lhs.tag < rhs.tag
+    var hashValue: Int {
+        return position.hashValue ^ tag.hashValue
     }
 }
