@@ -1,6 +1,6 @@
 import Foundation
 
-public struct RegEx {
+public struct RegEx: Hashable {
 
     public struct Result {
 
@@ -68,18 +68,6 @@ public struct RegEx {
         }
         return n
     }
-}
-
-extension RegEx: Equatable {
-
-    public static func ==(lhs: RegEx, rhs: RegEx) -> Bool {
-        return lhs.regex == rhs.regex
-    }
-}
-
-extension RegEx: Hashable {
-
-    public var hashValue: Int { return regex.hashValue }
 }
 
 public func ~=(pattern: RegEx, value: String) -> Bool {

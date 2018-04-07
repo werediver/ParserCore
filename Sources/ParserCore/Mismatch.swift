@@ -1,4 +1,4 @@
-public struct Mismatch {
+public struct Mismatch: Equatable {
 
     public let message: String?
 

@@ -13,7 +13,7 @@ public final class Memoizer<Index: Hashable, Delegate: MemoizerDelegate>: Tracin
 {
     typealias Value = Either<Mismatch, GenericMatch<Any, Index>>
 
-    private var cache = Dictionary<Key<Index>, Value>()
+    private var cache = Dictionary<Key, Value>()
     private weak var delegate: Delegate?
 
     init(delegate: Delegate) {
@@ -71,24 +71,9 @@ public final class Memoizer<Index: Hashable, Delegate: MemoizerDelegate>: Tracin
     private func willReturnCached(_ value: Value) {
         delegate?.memoizer(willReturnCached: value)
     }
-}
 
-struct Key<Index: Hashable> {
-    let position: Index
-    let tag: String
-}
-
-extension Key: Equatable {
-
-    static func ==(lhs: Key, rhs: Key) -> Bool {
-        return lhs.position == rhs.position
-            && lhs.tag == rhs.tag
-    }
-}
-
-extension Key: Hashable {
-
-    var hashValue: Int {
-        return position.hashValue ^ tag.hashValue
+    private struct Key: Hashable {
+        let position: Index
+        let tag: String
     }
 }

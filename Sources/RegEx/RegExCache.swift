@@ -23,11 +23,6 @@ final class RegExCache {
         let options: NSRegularExpression.Options
 
         var hashValue: Int { return pattern.hashValue ^ options.rawValue.hashValue }
-
-        static func ==(lhs: Key, rhs: Key) -> Bool {
-            return lhs.pattern == rhs.pattern
-                && lhs.options == rhs.options
-        }
     }
 }
 

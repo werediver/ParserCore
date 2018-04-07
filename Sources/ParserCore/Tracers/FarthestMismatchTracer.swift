@@ -45,9 +45,12 @@ public final class FarthestMismatchTracer<Index: Comparable, IndexDistance>: Tra
 
     private func register(_ mismatch: Mismatch) {
         let call = stack.last!
-        if farthestMismatch.map({ $0.position < call.position }) != false {
+        if farthestMismatch.map({ $0.position < call.position }) ?? true {
             farthestMismatch = (call.position, [(stack, mismatch)])
-        } else if let farthestMismatch = farthestMismatch, farthestMismatch.position == call.position {
+        } else if let farthestMismatch = farthestMismatch,
+            farthestMismatch.position == call.position,
+            farthestMismatch.list.last?.mismatch != mismatch
+        {
             self.farthestMismatch = (call.position, farthestMismatch.list + [(stack, mismatch)])
         }
     }

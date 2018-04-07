@@ -100,8 +100,8 @@ public enum JSONParser<Core: SomeCore> where
     }
 
     static func leadingWhitespace<T>(before parser: Parser<T>) -> Parser<T> {
-        return Core.maybe(Core.string(tag: "WHITESPACE", charset: Charset.whitespace))
-            .flatMap(tag: parser.tag.map { "_\($0)" }, const(parser))
+        return Core.string(tag: "WHITESPACE", charset: Charset.whitespace, count: .atLeast(0))
+            .flatMap(const(parser))
     }
 
     static func tag<T>(_ tag: String) -> (Parser<T>) -> Parser<T> {
