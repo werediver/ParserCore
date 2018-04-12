@@ -1,17 +1,3 @@
-/*
-
-[+] Flexible `accept(_:)`
-[+] `parse(_:)`
-    [+] Backtracking
-    [+] Farthest failure tracking
-        [ ] Deduplicate output
-    [+] Left recursion accomodation
-        [+] Depth limiting
-            [+] Tail length overestimating heuristic
-        [+] Caching
-
-*/
-
 public protocol SomeCore {
 
     associatedtype Source: Collection
@@ -33,7 +19,8 @@ public final class Core<_Source: Collection>: SomeCore where
     private let overestimatedCount: OverestimatedCount
 
     public private(set) lazy var tracer = EmptyTracer<Source.Index>()
-        .combine(with: DepthLimiter(
+        .combine(
+            with: DepthLimiter(
                 sourceLength: overestimatedCount(source.suffix(from: source.startIndex)),
                 tailLength: { [source, overestimatedCount] position in
                     overestimatedCount(source.suffix(from: position))

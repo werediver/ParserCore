@@ -58,7 +58,7 @@ public final class Memoizer<Index: Hashable, Delegate: MemoizerDelegate>: Tracin
                     .map { symbol in
                         .right(GenericMatch(symbol: symbol, range: match.range))
                     }
-                ??  .left(Mismatch(message: "Cache record type mismatch (duplicate tags?)"))
+                ??  .left(Mismatch(reason: .custom("cache record type mismatch (duplicate tags?)")))
             },
             left: Either.left
         )

@@ -1,42 +1,50 @@
 public struct Mismatch: Equatable {
 
-    public let message: String?
+    let tag: String?
+    let reason: Reason?
 
-    public init(message: String? = nil) {
-        self.message = message
+    var isEmpty: Bool { return tag == nil && reason == nil }
+
+    public init(tag: String? = nil, reason: Reason? = nil) {
+        if case let (nil, .got(mismatch)?) = (tag, reason) {
+            self = mismatch
+        } else {
+            self.tag = tag
+            self.reason = reason
+        }
+    }
+
+    public enum Reason: Equatable {
+
+        case custom(String)
+        case expected(String)
+        indirect case got(Mismatch)
     }
 }
 
 extension Mismatch: CustomStringConvertible {
-    public var description: String { return message ?? "No match" }
-}
 
-public extension Mismatch {
-
-    enum Expectation: CustomStringConvertible {
-        case object(Any)
-        case text(String)
-
-        public var description: String {
-            switch self {
-            case let .object(some):
-                return String(reflecting: some)
-            case let .text(some):
-                return some
+    public var description: String {
+        var tagDescription: String? { return tag.map { "cannot parse \($0)" } }
+        var reasonDescription: String? {
+            switch reason {
+            case let .custom(text)?:
+                return text
+            case let .expected(expectation)?:
+                return "expected \(expectation)"
+            case let .got(mismatch)? where !mismatch.isEmpty:
+                return "because \(mismatch)"
+            case nil, .got(_)?:
+                return nil
             }
         }
-    }
 
-    init(tag: String?, expectation: Expectation? = nil) {
-        switch (tag, expectation) {
-        case let (.some(tag), .some(expectation)):
-            self.message = "Cannot parse \(tag): expected \(expectation)"
-        case let (.some(tag), nil):
-            self.message = "Cannot parse \(tag)"
-        case let (nil, .some(expectation)):
-            self.message = "Expected \(expectation)"
-        case (nil, nil):
-            self.message = nil
+        if !isEmpty {
+            return [tagDescription, reasonDescription]
+                .compactMap(id)
+                .joined(separator: ", ")
+        } else {
+            return "cannot parse this"
         }
     }
 }

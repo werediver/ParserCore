@@ -60,7 +60,7 @@ extension JSONParser {
                 .attemptMap { text -> Either<Mismatch, Double> in
                     Double(text)
                         .map(Either.right)
-                    ??  .left(Mismatch(tag: "NUMBER", expectation: .text("double precision floating point number")))
+                    ??  .left(Mismatch(tag: "NUMBER", reason: .custom("cannot convert \(String(reflecting: text)) to double precision floating point number")))
                 }
     }
 }

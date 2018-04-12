@@ -42,7 +42,7 @@ public extension SomeCore where
                     return nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: tag, expectation: .object(pattern)))
+            ??  .left(Mismatch(tag: tag, reason: .expected(String(reflecting: pattern))))
         }
     }
 }

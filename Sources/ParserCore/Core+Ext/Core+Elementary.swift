@@ -13,7 +13,7 @@ public extension SomeCore {
                     return nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: nil, expectation: .text("end of input")))
+            ??  .left(Mismatch(tag: nil, reason: .expected("end of input")))
         }
     }
 }

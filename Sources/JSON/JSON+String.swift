@@ -5,14 +5,15 @@ extension JSONParser {
     static func stringLiteral() -> Parser<String> {
         return leadingWhitespace <|
             tag("STRING") <|
-            Core.subseq("\"")
+            Core.subseq(tag: "STRING_START", "\"")
                 .flatMap { _ -> Parser<String> in
                     Core.many(
                             Core.oneOf(
-                                    tag("UNESCAPED_CHARACTER") <|
-                                    Core.string(charset: Charset.stringUnescapedCharacters),
-                                    tag("ESCAPE_SEQUENCE") <|
-                                    Core.subseq("\\")
+                                    Core.string(
+                                            tag: "UNESCAPED_CHARACTER",
+                                            charset: Charset.stringUnescapedCharacters
+                                        ),
+                                    Core.subseq(tag: "ESCAPE_SEQUENCE", "\\")
                                         .flatMap { _ -> Parser<String> in
                                             Core.oneOf(
                                                     Core.subseq("\"").map(String.init),
@@ -25,14 +26,14 @@ extension JSONParser {
                                                     Core.subseq("t").map(const("\t")),
                                                     Core.subseq("u")
                                                         .flatMap { _ -> Parser<String> in
-                                                            Core.string(regex: "[0-9A-Fa-f]{4}")
-                                                                .attemptMap { text, _ in
+                                                            Core.string(charset: Charset.hexDigits, count: .exactly(4))
+                                                                .attemptMap { text in
                                                                     Int(text, radix: 16)
                                                                         .flatMap(UnicodeScalar.init)
                                                                         .map(Character.init)
                                                                         .map(String.init)
                                                                         .map(Either.right)
-                                                                    ??  .left(Mismatch(message: "Invalid unicode escape sequence \"\(text)\""))
+                                                                    ??  .left(Mismatch(reason: .custom("cannot convert \(String(reflecting: text)) to Unicode scalar")))
                                                                 }
                                                         }
                                                 )
@@ -42,7 +43,7 @@ extension JSONParser {
                         )
                         .map { substrings in substrings.joined() }
                         .flatMap { text -> Parser<String> in
-                            Core.subseq("\"")
+                            Core.subseq(tag: "STRING_END", "\"")
                                 .map(const(text))
                         }
                 }
