@@ -17,14 +17,14 @@ public extension SomeCore {
                 }
             }
 
-            var reason: Mismatch.Reason?
+            var expectation: Mismatch.Reason?
             if parsers.compactMap({ $0.tag }).count > 0 {
                 let alternatives = parsers
                     .map { describe($0.tag) }
                     .joined(separator: " or ")
-                reason = .expected(alternatives)
+                expectation = .expected(alternatives)
             }
-            return .left(Mismatch(tag: tag, reason: reason))
+            return .left(Mismatch(tag: tag, reason: expectation))
         }
     }
 }
@@ -43,7 +43,7 @@ public extension SomeCore where
                 .map(Either.right)
             ??  .left(Mismatch(
                     tag: tag,
-                    reason: .expected(
+                    reason: Mismatch.Reason.expected(
                         alternatives
                             .map(String.init(reflecting:))
                             .joined(separator: " or ")

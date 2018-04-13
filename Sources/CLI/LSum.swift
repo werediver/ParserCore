@@ -67,6 +67,7 @@ enum LSumParser<Core: SomeCore> where
                 Int(text)
                     .map(Num.init)
                     .map(Either.right)
+                    
                 ??  .left(Mismatch(reason: .custom("cannot convert \(String(reflecting: text)) to integer number")))
             }
     }
