@@ -22,7 +22,7 @@ public extension SomeCore {
                     return nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: tag))
+            ??  .left(Mismatch())
         }
     }
 }
@@ -42,7 +42,7 @@ public extension SomeCore where
                     return nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: tag, reason: .expected(String(reflecting: pattern))))
+            ??  .left(.expected(String(reflecting: pattern)))
         }
     }
 }

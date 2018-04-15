@@ -1,3 +1,8 @@
+extension String {
+
+    var nonEmpty: String? { return isEmpty ? nil : self }
+}
+
 func describe<T>(_ some: T?) -> String {
     return some.map(String.init(describing:)) ?? String(describing: some)
 }

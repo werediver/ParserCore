@@ -10,7 +10,7 @@ public extension SomeCore where
                         .map { Match(symbol: ($0.firstGroup, Array($0.groups.dropFirst())), range: tail.startIndex ..< tail.index(tail.startIndex, offsetBy: $0.firstGroup.count)) }
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(tag: tag, reason: .expected("text matching regular expression \(regex)")))
+            ??  .left(.expected("text matching regular expression \(regex)"))
         }
     }
 }

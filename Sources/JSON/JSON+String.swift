@@ -33,7 +33,7 @@ extension JSONParser {
                                                                         .map(Character.init)
                                                                         .map(String.init)
                                                                         .map(Either.right)
-                                                                    ??  .left(Mismatch(reason: .custom("cannot convert \(String(reflecting: text)) to Unicode scalar")))
+                                                                    ??  .left(.cannotConvert(String(reflecting: text), to: "Unicode scalar"))
                                                                 }
                                                         }
                                                 )

@@ -17,14 +17,14 @@ public extension SomeCore {
                 }
             }
 
-            var expectation: Mismatch.Reason?
-            if parsers.compactMap({ $0.tag }).count > 0 {
-                let alternatives = parsers
-                    .map { describe($0.tag) }
-                    .joined(separator: " or ")
-                expectation = .expected(alternatives)
-            }
-            return .left(Mismatch(tag: tag, reason: expectation))
+            let mismatch = parsers
+                .map { describe($0.tag) }
+                .joined(separator: " or ")
+                .nonEmpty
+                .map(Mismatch.expected)
+            ??  Mismatch()
+
+            return .left(mismatch)
         }
     }
 }
@@ -41,13 +41,10 @@ public extension SomeCore where
                     return nil
                 }
                 .map(Either.right)
-            ??  .left(Mismatch(
-                    tag: tag,
-                    reason: Mismatch.Reason.expected(
-                        alternatives
-                            .map(String.init(reflecting:))
-                            .joined(separator: " or ")
-                    )
+            ??  .left(.expected(
+                    alternatives
+                        .map(String.init(reflecting:))
+                        .joined(separator: " or ")
                 ))
         }
     }

@@ -25,7 +25,7 @@ public extension SomeCore {
             if limit.contains(items.count) {
                 return .right(items)
             }
-            return .left(Mismatch(tag: tag, reason: parser.tag.map { tag in .expected("\(limit) \(tag)") }))
+            return .left(parser.tag.map { tag in Mismatch.expected("\(limit) \(tag)") } ?? Mismatch())
         }
     }
 }

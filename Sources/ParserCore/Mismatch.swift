@@ -1,38 +1,28 @@
-public struct Mismatch: Equatable, CustomStringConvertible {
+public struct Mismatch: Equatable {
 
-    public let description: String
+    public let reason: String
 
-    public init(description: String) {
-        self.description = description
+    public init(reason: String) {
+        self.reason = reason
     }
+}
+
+extension Mismatch: CustomStringConvertible {
+
+    public var description: String { return reason }
 }
 
 public extension Mismatch {
 
-    init(tag: String? = nil, reason: Reason? = nil) {
-        let tagDescription = tag.map { "cannot parse \($0)" }
-        let reasonDescription = reason.map(String.init(describing:))
-
-        if tagDescription != nil || reasonDescription != nil {
-            self.description = [tagDescription, reasonDescription]
-                .compactMap(id)
-                .joined(separator: ", ")
-        } else {
-            self.description = "cannot parse this"
-        }
+    init() {
+        self.init(reason: "cannot parse this")
     }
 
-    enum Reason: CustomStringConvertible {
-        case custom(String)
-        case expected(String)
+    static func expected(_ target: String) -> Mismatch {
+        return Mismatch(reason: "expected \(target)")
+    }
 
-        public var description: String {
-            switch self {
-            case let .custom(text):
-                return text
-            case let .expected(text):
-                return "expected \(text)"
-            }
-        }
+    static func cannotConvert(_ some: String, to target: String) -> Mismatch {
+        return Mismatch(reason: "cannot convert \(some) to \(target)")
     }
 }
